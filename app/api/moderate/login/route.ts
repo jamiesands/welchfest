@@ -11,7 +11,8 @@ export async function POST(req: Request) {
     if (next && next !== "/moderate") url.searchParams.set("next", next);
     return NextResponse.redirect(url, { status: 303 });
   }
-  const safeNext = next.startsWith("/moderate") ? next : "/moderate";
+  const safeNext =
+    next.startsWith("/moderate") || next.startsWith("/dj") ? next : "/moderate";
   const res = NextResponse.redirect(new URL(safeNext, req.url), { status: 303 });
   res.cookies.set(MOD_COOKIE, "1", {
     httpOnly: true,
