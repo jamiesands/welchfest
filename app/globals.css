@@ -1,0 +1,39 @@
+@import "tailwindcss";
+
+@theme {
+  --color-paper: #efe8d4;
+  --color-card: #f7f1de;
+  --color-card-deep: #e8dfc4;
+  --color-ink: #1e1b16;
+  --color-blue: #2275b3;
+  --color-blue-deep: #164b75;
+  --color-blue-soft: #cfe1ee;
+  --color-stamp: #b8412a;
+  --color-olive: #384a2f;
+  --color-faded: #7b7367;
+
+  --font-sans: var(--font-plex-sans), system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+}
+
+html,
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+}
+
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@keyframes wbcaret {
+  50% {
+    opacity: 0;
+  }
+}
+
+.wb-caret {
+  animation: wbcaret 1s steps(1) infinite;
+}
