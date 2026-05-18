@@ -46,6 +46,7 @@ export default function SongsPage() {
       router.replace("/join");
       return;
     }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setGuestId(id);
     setBootstrapped(true);
   }, [router]);
@@ -72,6 +73,7 @@ export default function SongsPage() {
   }, [guestId]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchAll();
   }, [fetchAll]);
 

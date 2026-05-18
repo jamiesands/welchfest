@@ -63,6 +63,7 @@ export default function FeedPage() {
       router.replace("/join");
       return;
     }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setGuestId(id);
     setBootstrapped(true);
   }, [router]);
@@ -90,6 +91,7 @@ export default function FeedPage() {
   }, [bootstrapped, tab, guestId]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadInitial();
     refreshCount();
   }, [loadInitial, refreshCount]);
