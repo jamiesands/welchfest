@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Static design-handoff JSX served via Babel-standalone in the browser.
+    // Globals come from sibling <script> tags, so module-aware lint rules
+    // don't apply.
+    "design/**",
   ]),
 ]);
 
