@@ -30,11 +30,13 @@ export default function UploadPage() {
       router.replace("/join");
       return;
     }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setGuestId(id);
   }, [router]);
 
   useEffect(() => {
     if (!file) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPreviewUrl(null);
       return;
     }

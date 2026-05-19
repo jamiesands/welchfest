@@ -21,6 +21,7 @@ export default async function ModeratePage() {
       .from("photos")
       .select("id", { count: "exact", head: true })
       .eq("status", "hidden")
+      // eslint-disable-next-line react-hooks/purity -- server component, runs per request
       .gte("moderated_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
     sb
       .from("guests")
