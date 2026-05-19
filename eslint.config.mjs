@@ -3,19 +3,15 @@ import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
 
 const eslintConfig = defineConfig([
+  { ignores: ["design/**", "node_modules/**", ".next/**"] },
   ...nextVitals,
   ...nextTs,
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:
-    ".next/**",
     "out/**",
     "build/**",
     "next-env.d.ts",
-    // Static design-handoff JSX served via Babel-standalone in the browser.
-    // Globals come from sibling <script> tags, so module-aware lint rules
-    // don't apply.
-    "design/**",
   ]),
 ]);
 
