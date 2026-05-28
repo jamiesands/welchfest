@@ -21,7 +21,7 @@ export default function WBLetterhead({
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <WelchMark size={26} color="#2275b3" />
+        <WelchMark size={26} mode="real" />
         <div style={{ flex: 1 }}>
           <div
             style={{

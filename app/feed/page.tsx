@@ -189,7 +189,7 @@ export default function FeedPage() {
           flexShrink: 0,
         }}
       >
-        <WelchMark size={28} color="#2275b3" />
+        <WelchMark size={28} mode="real" />
         <div style={{ flex: 1 }}>
           <WBLabel>Manifest in progress</WBLabel>
           <div
