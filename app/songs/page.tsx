@@ -14,30 +14,33 @@ import WBLetterhead from "@/components/waybill/WBLetterhead";
 import WBLabel from "@/components/waybill/WBLabel";
 import { supabase } from "@/lib/supabase";
 import {
+  DONE_STATUSES,
   SONG_COLS,
+  songDepot,
+  songGuestName,
   sortQueue,
-  type SongStatus,
   type SongWithGuest,
 } from "@/lib/songs";
 
-const POLL_MS = 5000;
+const PLAYED_LIMIT = 10;
 
 type Sort = "votes" | "new";
 
 export default function SongsPage() {
   const router = useRouter();
   const [guestId, setGuestId] = useState<string | null>(null);
+  const [guestName, setGuestName] = useState<string | null>(null);
+  const [depot, setDepot] = useState<string | null>(null);
   const [bootstrapped, setBootstrapped] = useState(false);
   const [nowPlaying, setNowPlaying] = useState<SongWithGuest | null>(null);
   const [queue, setQueue] = useState<SongWithGuest[]>([]);
+  const [played, setPlayed] = useState<SongWithGuest[]>([]);
   const [myVotes, setMyVotes] = useState<Set<string>>(new Set());
   const [sort, setSort] = useState<Sort>("votes");
   const [title, setTitle] = useState("");
   const [artist, setArtist] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
-  const [showPlayed, setShowPlayed] = useState(false);
-  const [played, setPlayed] = useState<SongWithGuest[]>([]);
   const toastTimer = useRef<number | null>(null);
 
   useEffect(() => {
@@ -46,18 +49,41 @@ export default function SongsPage() {
       router.replace("/join");
       return;
     }
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setGuestId(id);
-    setBootstrapped(true);
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("guests")
+        .select("name, depot")
+        .eq("id", id)
+        .single();
+      if (cancelled) return;
+      if (!data) {
+        router.replace("/join");
+        return;
+      }
+      setGuestId(id);
+      setGuestName(data.name);
+      setDepot(data.depot);
+      setBootstrapped(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [router]);
 
   const fetchAll = useCallback(async () => {
     if (!guestId) return;
-    const [activeRes, votesRes] = await Promise.all([
+    const [activeRes, playedRes, votesRes] = await Promise.all([
       supabase
         .from("songs")
         .select(SONG_COLS)
         .in("status", ["queued", "cued", "playing"]),
+      supabase
+        .from("songs")
+        .select(SONG_COLS)
+        .in("status", DONE_STATUSES)
+        .order("finished_playing_at", { ascending: false, nullsFirst: false })
+        .limit(PLAYED_LIMIT),
       supabase.from("song_votes").select("song_id").eq("guest_id", guestId),
     ]);
     if (activeRes.data) {
@@ -66,6 +92,9 @@ export default function SongsPage() {
       const queueRows = sortQueue(rows.filter((r) => r.status !== "playing"));
       setNowPlaying(playing);
       setQueue(queueRows);
+    }
+    if (playedRes.data) {
+      setPlayed(playedRes.data as unknown as SongWithGuest[]);
     }
     if (votesRes.data) {
       setMyVotes(new Set(votesRes.data.map((v) => v.song_id)));
@@ -77,19 +106,54 @@ export default function SongsPage() {
     fetchAll();
   }, [fetchAll]);
 
+  // Realtime: any change on songs or song_votes refreshes the lists. The
+  // trigger keeps songs.votes_count in sync, so the UPDATE event carries
+  // the latest count; we just need to re-sort and re-bucket.
   useEffect(() => {
     if (!bootstrapped) return;
-    function tick() {
-      if (document.visibilityState !== "visible") return;
-      fetchAll();
-    }
-    const id = window.setInterval(tick, POLL_MS);
-    document.addEventListener("visibilitychange", tick);
+    const channel = supabase
+      .channel("welchfest-songs-guest")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "welchfest", table: "songs" },
+        () => {
+          fetchAll();
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "welchfest",
+          table: "song_votes",
+          filter: guestId ? `guest_id=eq.${guestId}` : undefined,
+        },
+        (payload) => {
+          // Keep my-votes set in sync if another device of mine voted.
+          if (payload.eventType === "INSERT") {
+            const songId = (payload.new as { song_id: string }).song_id;
+            setMyVotes((prev) => {
+              if (prev.has(songId)) return prev;
+              const next = new Set(prev);
+              next.add(songId);
+              return next;
+            });
+          } else if (payload.eventType === "DELETE") {
+            const songId = (payload.old as { song_id: string }).song_id;
+            setMyVotes((prev) => {
+              if (!prev.has(songId)) return prev;
+              const next = new Set(prev);
+              next.delete(songId);
+              return next;
+            });
+          }
+        }
+      )
+      .subscribe();
     return () => {
-      window.clearInterval(id);
-      document.removeEventListener("visibilitychange", tick);
+      supabase.removeChannel(channel);
     };
-  }, [bootstrapped, fetchAll]);
+  }, [bootstrapped, fetchAll, guestId]);
 
   const displayQueue = useMemo(() => {
     if (sort === "new") {
@@ -108,14 +172,20 @@ export default function SongsPage() {
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (!guestId || submitting) return;
+    if (!guestId || !guestName || !depot || submitting) return;
     const t = title.trim();
     const a = artist.trim();
-    if (!t || !a) return;
+    if (!t) return;
     setSubmitting(true);
     const { data, error } = await supabase
       .from("songs")
-      .insert({ guest_id: guestId, title: t, artist: a })
+      .insert({
+        guest_id: guestId,
+        guest_name: guestName,
+        depot,
+        title: t,
+        artist: a,
+      })
       .select("id")
       .single();
     if (!error && data) {
@@ -125,7 +195,6 @@ export default function SongsPage() {
       setTitle("");
       setArtist("");
       flash("On the loading sheet.");
-      await fetchAll();
     } else {
       flash("Couldn't add — try again.");
     }
@@ -135,6 +204,8 @@ export default function SongsPage() {
   async function toggleVote(songId: string) {
     if (!guestId) return;
     const has = myVotes.has(songId);
+    // Optimistic local update — the trigger + realtime UPDATE will
+    // reconcile votes_count for everyone else.
     setMyVotes((prev) => {
       const next = new Set(prev);
       if (has) next.delete(songId);
@@ -161,25 +232,10 @@ export default function SongsPage() {
     }
   }
 
-  async function loadPlayed() {
-    const next = !showPlayed;
-    setShowPlayed(next);
-    if (next && played.length === 0) {
-      const { data } = await supabase
-        .from("songs")
-        .select(SONG_COLS)
-        .eq("status", "played" satisfies SongStatus)
-        .order("finished_playing_at", { ascending: false })
-        .limit(10);
-      if (data) setPlayed(data as unknown as SongWithGuest[]);
-    }
-  }
-
   return (
     <main className="min-h-dvh bg-paper text-ink font-sans flex flex-col w-full max-w-md mx-auto relative">
       <WBLetterhead subtitle="Loading Sheet" code="Cargo of the night" />
 
-      {/* Now departing */}
       <NowDeparting song={nowPlaying} />
 
       {/* Queue header */}
@@ -220,98 +276,11 @@ export default function SongsPage() {
           <SortPill active={sort === "new"} onClick={() => setSort("new")}>
             NEW
           </SortPill>
-          <button
-            type="button"
-            onClick={loadPlayed}
-            style={{
-              padding: "3px 7px",
-              border: "1px solid var(--color-ink)",
-              background: showPlayed ? "var(--color-ink)" : "transparent",
-              color: showPlayed ? "var(--color-paper)" : "var(--color-ink)",
-              fontFamily: "inherit",
-              fontSize: "inherit",
-              letterSpacing: "inherit",
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
-          >
-            PLAYED
-          </button>
         </div>
       </div>
 
       <div style={{ flex: 1, paddingBottom: 130 }}>
-        {showPlayed && (
-          <div
-            style={{
-              background: "var(--color-card-deep)",
-              borderBottom: "1.5px solid var(--color-ink)",
-              padding: "8px 14px",
-            }}
-          >
-            <WBLabel>Last played</WBLabel>
-            {played.length === 0 && (
-              <div
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 10,
-                  color: "var(--color-faded)",
-                  letterSpacing: "0.12em",
-                  marginTop: 6,
-                }}
-              >
-                NOTHING YET.
-              </div>
-            )}
-            <ul
-              style={{
-                listStyle: "none",
-                margin: "6px 0 0",
-                padding: 0,
-                display: "flex",
-                flexDirection: "column",
-                gap: 4,
-              }}
-            >
-              {played.map((p) => (
-                <li
-                  key={p.id}
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    fontFamily: "var(--font-sans)",
-                    fontSize: 12,
-                  }}
-                >
-                  <span>
-                    <strong>{p.title}</strong>
-                    <span
-                      style={{
-                        fontFamily: "var(--font-mono)",
-                        fontSize: 10,
-                        color: "var(--color-faded)",
-                        marginLeft: 6,
-                      }}
-                    >
-                      {p.artist}
-                    </span>
-                  </span>
-                  <span
-                    style={{
-                      fontFamily: "var(--font-mono)",
-                      fontSize: 10,
-                      color: "var(--color-blue)",
-                    }}
-                  >
-                    {p.guest?.depot ?? "—"}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {displayQueue.length === 0 && (
+        {displayQueue.length === 0 && played.length === 0 && (
           <div
             style={{
               padding: "30px 24px",
@@ -332,137 +301,32 @@ export default function SongsPage() {
           const voted = myVotes.has(s.id);
           const isCued = s.status === "cued";
           return (
-            <div
+            <QueueRow
               key={s.id}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                padding: "10px 14px",
-                borderBottom: "1px dashed rgba(30, 27, 22, 0.2)",
-                gap: 10,
-                background: isCued ? "var(--color-card)" : "transparent",
-              }}
-            >
-              <div
-                style={{
-                  width: 26,
-                  flexShrink: 0,
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 16,
-                  fontWeight: 700,
-                  color:
-                    i === 0 ? "var(--color-blue-deep)" : "var(--color-ink)",
-                  fontVariantNumeric: "tabular-nums",
-                }}
-              >
-                {String(i + 1).padStart(2, "0")}
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div
-                  style={{
-                    fontFamily: "var(--font-sans)",
-                    fontSize: 13,
-                    fontWeight: 600,
-                    lineHeight: 1.2,
-                  }}
-                >
-                  {s.title}
-                  {yours && (
-                    <span
-                      style={{
-                        fontFamily: "var(--font-mono)",
-                        fontSize: 8.5,
-                        padding: "1px 4px",
-                        marginLeft: 6,
-                        background: "var(--color-stamp)",
-                        color: "var(--color-paper)",
-                        letterSpacing: "0.12em",
-                        fontWeight: 700,
-                      }}
-                    >
-                      YOURS
-                    </span>
-                  )}
-                  {isCued && (
-                    <span
-                      style={{
-                        fontFamily: "var(--font-mono)",
-                        fontSize: 8.5,
-                        padding: "1px 4px",
-                        marginLeft: 6,
-                        background: "var(--color-blue-deep)",
-                        color: "var(--color-paper)",
-                        letterSpacing: "0.12em",
-                        fontWeight: 700,
-                      }}
-                    >
-                      CUED
-                    </span>
-                  )}
-                </div>
-                <div
-                  style={{
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 10,
-                    color: "var(--color-faded)",
-                    marginTop: 1,
-                  }}
-                >
-                  {s.artist} · req. {s.guest?.depot ?? "—"}
-                </div>
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 6,
-                  flexShrink: 0,
-                }}
-              >
-                <div
-                  style={{
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 13,
-                    fontWeight: 700,
-                    fontVariantNumeric: "tabular-nums",
-                    minWidth: 18,
-                    textAlign: "right",
-                  }}
-                >
-                  {s.votes_count}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => toggleVote(s.id)}
-                  aria-label={voted ? "Remove vote" : "Upvote"}
-                  aria-pressed={voted}
-                  style={{
-                    width: 24,
-                    height: 24,
-                    border: "1.5px solid var(--color-blue-deep)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 14,
-                    fontWeight: 700,
-                    background: voted
-                      ? "var(--color-blue-deep)"
-                      : "transparent",
-                    color: voted
-                      ? "var(--color-paper)"
-                      : "var(--color-blue-deep)",
-                    cursor: "pointer",
-                    padding: 0,
-                    lineHeight: 1,
-                  }}
-                >
-                  ↑
-                </button>
-              </div>
-            </div>
+              song={s}
+              index={i}
+              voted={voted}
+              yours={yours}
+              cued={isCued}
+              onVote={() => toggleVote(s.id)}
+            />
           );
         })}
+
+        {played.length > 0 && (
+          <div
+            style={{
+              borderTop: "1.5px solid var(--color-ink)",
+              background: "var(--color-card-deep)",
+              padding: "8px 16px 4px",
+            }}
+          >
+            <WBLabel>Departed</WBLabel>
+          </div>
+        )}
+        {played.map((s) => (
+          <DepartedRow key={s.id} song={s} />
+        ))}
       </div>
 
       {/* Request bar */}
@@ -486,38 +350,20 @@ export default function SongsPage() {
           placeholder="Track title"
           aria-label="Track title"
           maxLength={120}
-          style={{
-            border: "1.5px solid var(--color-ink)",
-            background: "var(--color-paper)",
-            padding: "8px 10px",
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
-            color: "var(--color-ink)",
-            outline: "none",
-            letterSpacing: "0.04em",
-          }}
+          style={inputStyle}
         />
         <input
           type="text"
           value={artist}
           onChange={(e) => setArtist(e.target.value)}
-          placeholder="Artist"
+          placeholder="Artist (optional)"
           aria-label="Artist"
           maxLength={120}
-          style={{
-            border: "1.5px solid var(--color-ink)",
-            background: "var(--color-paper)",
-            padding: "8px 10px",
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
-            color: "var(--color-ink)",
-            outline: "none",
-            letterSpacing: "0.04em",
-          }}
+          style={inputStyle}
         />
         <button
           type="submit"
-          disabled={!title.trim() || !artist.trim() || submitting}
+          disabled={!title.trim() || submitting}
           style={{
             background: "var(--color-blue-deep)",
             color: "var(--color-paper)",
@@ -529,8 +375,7 @@ export default function SongsPage() {
             boxShadow: "2px 2px 0 var(--color-ink)",
             border: "none",
             cursor: "pointer",
-            opacity:
-              title.trim() && artist.trim() && !submitting ? 1 : 0.55,
+            opacity: title.trim() && !submitting ? 1 : 0.55,
           }}
         >
           + ADD
@@ -616,6 +461,240 @@ export default function SongsPage() {
         </div>
       )}
     </main>
+  );
+}
+
+const inputStyle: React.CSSProperties = {
+  border: "1.5px solid var(--color-ink)",
+  background: "var(--color-paper)",
+  padding: "8px 10px",
+  fontFamily: "var(--font-mono)",
+  fontSize: 11,
+  color: "var(--color-ink)",
+  outline: "none",
+  letterSpacing: "0.04em",
+};
+
+function QueueRow({
+  song,
+  index,
+  voted,
+  yours,
+  cued,
+  onVote,
+}: {
+  song: SongWithGuest;
+  index: number;
+  voted: boolean;
+  yours: boolean;
+  cued: boolean;
+  onVote: () => void;
+}) {
+  const name = songGuestName(song);
+  const dep = songDepot(song);
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        padding: "10px 14px",
+        borderBottom: "1px dashed rgba(30, 27, 22, 0.2)",
+        gap: 10,
+        background: cued ? "var(--color-card)" : "transparent",
+      }}
+    >
+      <div
+        style={{
+          width: 26,
+          flexShrink: 0,
+          fontFamily: "var(--font-mono)",
+          fontSize: 16,
+          fontWeight: 700,
+          color: index === 0 ? "var(--color-blue-deep)" : "var(--color-ink)",
+          fontVariantNumeric: "tabular-nums",
+        }}
+      >
+        {String(index + 1).padStart(2, "0")}
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div
+          style={{
+            fontFamily: "var(--font-sans)",
+            fontSize: 13,
+            fontWeight: 600,
+            lineHeight: 1.2,
+          }}
+        >
+          {song.title}
+          {yours && <Pill bg="var(--color-stamp)">YOURS</Pill>}
+          {cued && <Pill bg="var(--color-blue-deep)">CUED</Pill>}
+        </div>
+        <div
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 10,
+            color: "var(--color-faded)",
+            marginTop: 1,
+          }}
+        >
+          {song.artist || "—"} · req. {name} ·{" "}
+          <span style={{ color: "var(--color-blue)" }}>{dep}</span>
+        </div>
+      </div>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          flexShrink: 0,
+        }}
+      >
+        <div
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 13,
+            fontWeight: 700,
+            fontVariantNumeric: "tabular-nums",
+            minWidth: 18,
+            textAlign: "right",
+          }}
+        >
+          {song.votes_count}
+        </div>
+        {yours ? (
+          <span
+            aria-hidden
+            style={{
+              width: 24,
+              height: 24,
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontFamily: "var(--font-mono)",
+              fontSize: 12,
+              color: "var(--color-faded)",
+            }}
+          >
+            ·
+          </span>
+        ) : (
+          <button
+            type="button"
+            onClick={onVote}
+            disabled={voted}
+            aria-label={voted ? "Voted" : "Upvote"}
+            aria-pressed={voted}
+            style={{
+              width: 24,
+              height: 24,
+              border: "1.5px solid var(--color-blue-deep)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontFamily: "var(--font-mono)",
+              fontSize: 14,
+              fontWeight: 700,
+              background: voted ? "var(--color-blue-deep)" : "transparent",
+              color: voted ? "var(--color-paper)" : "var(--color-blue-deep)",
+              cursor: voted ? "default" : "pointer",
+              padding: 0,
+              lineHeight: 1,
+              opacity: voted ? 0.85 : 1,
+            }}
+          >
+            ↑
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function DepartedRow({ song }: { song: SongWithGuest }) {
+  const name = songGuestName(song);
+  const dep = songDepot(song);
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        padding: "8px 14px",
+        borderBottom: "1px dashed rgba(30, 27, 22, 0.18)",
+        gap: 10,
+        opacity: 0.55,
+        background: "var(--color-card-deep)",
+      }}
+    >
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div
+          style={{
+            fontFamily: "var(--font-sans)",
+            fontSize: 12.5,
+            fontWeight: 600,
+            lineHeight: 1.2,
+            textDecoration: "line-through",
+          }}
+        >
+          {song.title}
+          <span
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 8.5,
+              padding: "1px 4px",
+              marginLeft: 6,
+              border: "1.5px solid var(--color-ink)",
+              color: "var(--color-ink)",
+              letterSpacing: "0.14em",
+              fontWeight: 700,
+              textTransform: "uppercase",
+              textDecoration: "none",
+            }}
+          >
+            Departed
+          </span>
+        </div>
+        <div
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 10,
+            color: "var(--color-faded)",
+            marginTop: 1,
+          }}
+        >
+          {song.artist || "—"} · req. {name} ·{" "}
+          <span style={{ color: "var(--color-blue)" }}>{dep}</span>
+        </div>
+      </div>
+      <div
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: 11,
+          color: "var(--color-faded)",
+          fontVariantNumeric: "tabular-nums",
+        }}
+      >
+        {song.votes_count}
+      </div>
+    </div>
+  );
+}
+
+function Pill({ children, bg }: { children: React.ReactNode; bg: string }) {
+  return (
+    <span
+      style={{
+        fontFamily: "var(--font-mono)",
+        fontSize: 8.5,
+        padding: "1px 4px",
+        marginLeft: 6,
+        background: bg,
+        color: "var(--color-paper)",
+        letterSpacing: "0.12em",
+        fontWeight: 700,
+      }}
+    >
+      {children}
+    </span>
   );
 }
 
@@ -726,7 +805,8 @@ function NowDeparting({ song }: { song: SongWithGuest | null }) {
                   marginTop: 1,
                 }}
               >
-                {song.artist} · req. {song.guest?.depot ?? "—"}
+                {song.artist || "—"} · req. {songGuestName(song)} ·{" "}
+                {songDepot(song)}
               </div>
             </>
           ) : (
@@ -776,3 +856,4 @@ function NowDeparting({ song }: { song: SongWithGuest | null }) {
     </div>
   );
 }
+

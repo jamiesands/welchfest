@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-const GATED = ["/moderate", "/dj"];
-const GATED_API = ["/api/moderate", "/api/dj"];
+const GATED = ["/moderate"];
+const GATED_API = ["/api/moderate"];
 
 function isGated(path: string): boolean {
   return GATED.some((p) => path === p || path.startsWith(`${p}/`)) ||
@@ -28,5 +28,5 @@ export function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/moderate/:path*", "/api/moderate/:path*", "/dj/:path*", "/api/dj/:path*"],
+  matcher: ["/moderate/:path*", "/api/moderate/:path*"],
 };

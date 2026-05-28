@@ -9,6 +9,8 @@ export type SongStatus =
 export type Song = {
   id: string;
   guest_id: string | null;
+  guest_name: string | null;
+  depot: string | null;
   title: string;
   artist: string;
   status: SongStatus;
@@ -24,7 +26,22 @@ export type SongWithGuest = Song & {
 };
 
 export const SONG_COLS =
-  "id, guest_id, title, artist, status, votes_count, requested_at, cued_at, started_playing_at, finished_playing_at, guest:guests(name, depot)";
+  "id, guest_id, guest_name, depot, title, artist, status, votes_count, requested_at, cued_at, started_playing_at, finished_playing_at, guest:guests(name, depot)";
+
+export function songGuestName(s: SongWithGuest): string {
+  return s.guest_name ?? s.guest?.name ?? "Guest";
+}
+
+export function songDepot(s: SongWithGuest): string {
+  return s.depot ?? s.guest?.depot ?? "—";
+}
+
+// Done states sink to the bottom of guest-facing lists.
+export const DONE_STATUSES: SongStatus[] = ["played", "skipped", "blocked"];
+
+export function isDone(s: Pick<Song, "status">): boolean {
+  return DONE_STATUSES.includes(s.status);
+}
 
 export function sortQueue<T extends Song>(rows: T[]): T[] {
   const cued = rows
