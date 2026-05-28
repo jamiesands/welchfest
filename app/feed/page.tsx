@@ -297,7 +297,7 @@ export default function FeedPage() {
       </div>
 
       <div style={{ flex: 1, minHeight: 0, paddingBottom: 64 }}>
-        {tab === "360" ? (
+        {rows.length === 0 && bootstrapped ? (
           <div
             style={{
               padding: "40px 24px",
@@ -310,27 +310,11 @@ export default function FeedPage() {
               lineHeight: 1.6,
             }}
           >
-            360° spheres land here.
-            <br />
-            <span style={{ fontSize: 9, opacity: 0.7 }}>
-              Logged from the depot rig — coming through the night.
-            </span>
-          </div>
-        ) : rows.length === 0 && bootstrapped ? (
-          <div
-            style={{
-              padding: "40px 24px",
-              textAlign: "center",
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
-              color: "var(--color-faded)",
-              letterSpacing: "0.16em",
-              textTransform: "uppercase",
-            }}
-          >
             {tab === "mine"
               ? "You haven't logged anything yet."
-              : "Manifest empty. Log the first unit."}
+              : tab === "360"
+                ? <>360° spheres land here.<br /><span style={{ fontSize: 9, opacity: 0.7 }}>Logged from the depot rig — coming through the night.</span></>
+                : "Manifest empty. Log the first unit."}
           </div>
         ) : (
           rows.map((p) => (

@@ -6,7 +6,7 @@ export type PhotoStatus = "pending" | "approved" | "hidden";
 export type Photo = {
   id: string;
   unit_number: number;
-  guest_id: string;
+  guest_id: string | null;
   storage_path: string;
   image_url: string | null;
   guest_name: string | null;
