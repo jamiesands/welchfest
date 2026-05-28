@@ -136,7 +136,7 @@ export default function DjConsole() {
           flexWrap: "wrap",
         }}
       >
-        <WelchMark size={28} color="#2275b3" />
+        <WelchMark size={28} mode="real" />
         <div>
           <div
             style={{

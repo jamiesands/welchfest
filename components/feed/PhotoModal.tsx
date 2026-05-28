@@ -2,7 +2,14 @@
 
 import { useEffect, useRef, useState } from "react";
 import Script from "next/script";
-import { publicUrl, unit3, formatClock, type PhotoWithGuest } from "@/lib/photos";
+import {
+  photoDepot,
+  photoGuestName,
+  photoImageUrl,
+  unit3,
+  formatClock,
+  type PhotoWithGuest,
+} from "@/lib/photos";
 
 const PANNELLUM_CSS =
   "https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css";
@@ -38,7 +45,7 @@ export default function PhotoModal({ photo, onClose }: Props) {
     typeof window !== "undefined" && !!window.pannellum
   );
 
-  const url = publicUrl(photo.storage_path);
+  const url = photoImageUrl(photo);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -183,7 +190,7 @@ export default function PhotoModal({ photo, onClose }: Props) {
             fontWeight: 700,
           }}
         >
-          {photo.guest?.name ?? "Guest"}{" "}
+          {photoGuestName(photo)}{" "}
           <span
             style={{
               fontFamily: "var(--font-mono)",
@@ -192,7 +199,7 @@ export default function PhotoModal({ photo, onClose }: Props) {
               marginLeft: 6,
             }}
           >
-            {photo.guest?.depot ?? "—"}
+            {photoDepot(photo)}
           </span>
         </div>
         <div

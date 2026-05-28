@@ -13,47 +13,50 @@ import WelchMark from "@/components/waybill/WelchMark";
 import WBLabel from "@/components/waybill/WBLabel";
 import EntryRow from "@/components/feed/EntryRow";
 import PhotoModal from "@/components/feed/PhotoModal";
+import UploadSheet from "@/components/feed/UploadSheet";
 import { supabase } from "@/lib/supabase";
 import type { PhotoWithGuest } from "@/lib/photos";
 
-type Tab = "all" | "photo" | "360" | "mine";
+type Tab = "photo" | "360" | "mine";
 
 const TABS: { id: Tab; label: string }[] = [
-  { id: "all", label: "All" },
   { id: "photo", label: "Photo" },
   { id: "360", label: "360°" },
   { id: "mine", label: "Mine" },
 ];
 
 const PAGE_SIZE = 30;
-const POLL_MS = 8000;
 
 const PHOTO_COLS =
-  "id, unit_number, guest_id, storage_path, type, caption, status, created_at, moderated_at, guest:guests(name, depot)";
+  "id, unit_number, guest_id, storage_path, image_url, guest_name, depot, type, caption, status, created_at, moderated_at, guest:guests(name, depot)";
+
+function baseQuery() {
+  return supabase.from("photos").select(PHOTO_COLS).neq("status", "hidden");
+}
 
 function buildQuery(tab: Tab, guestId: string | null) {
-  const base = supabase.from("photos").select(PHOTO_COLS);
   if (tab === "mine") {
-    if (!guestId) return base.eq("id", "00000000-0000-0000-0000-000000000000");
-    return base.eq("guest_id", guestId).in("status", ["pending", "approved"]);
+    if (!guestId) return baseQuery().eq("id", "00000000-0000-0000-0000-000000000000");
+    return baseQuery().eq("guest_id", guestId);
   }
-  if (tab === "photo") return base.eq("status", "approved").eq("type", "photo");
-  if (tab === "360") return base.eq("status", "approved").eq("type", "360");
-  return base.eq("status", "approved");
+  if (tab === "360") return baseQuery().eq("type", "360");
+  return baseQuery().eq("type", "photo");
 }
 
 export default function FeedPage() {
   const router = useRouter();
   const [guestId, setGuestId] = useState<string | null>(null);
+  const [guestName, setGuestName] = useState<string | null>(null);
+  const [depot, setDepot] = useState<string | null>(null);
   const [bootstrapped, setBootstrapped] = useState(false);
-  const [tab, setTab] = useState<Tab>("all");
+  const [tab, setTab] = useState<Tab>("photo");
   const [rows, setRows] = useState<PhotoWithGuest[]>([]);
   const [unitCount, setUnitCount] = useState<number | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [open, setOpen] = useState<PhotoWithGuest | null>(null);
+  const [uploadOpen, setUploadOpen] = useState(false);
   const [freshIds, setFreshIds] = useState<Set<string>>(new Set());
-  const newestRef = useRef<string | null>(null);
   const oldestRef = useRef<string | null>(null);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
@@ -63,16 +66,34 @@ export default function FeedPage() {
       router.replace("/join");
       return;
     }
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setGuestId(id);
-    setBootstrapped(true);
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("guests")
+        .select("name, depot")
+        .eq("id", id)
+        .single();
+      if (cancelled) return;
+      if (!data) {
+        router.replace("/join");
+        return;
+      }
+      setGuestId(id);
+      setGuestName(data.name);
+      setDepot(data.depot);
+      setBootstrapped(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [router]);
 
   const refreshCount = useCallback(async () => {
     const { count } = await supabase
       .from("photos")
       .select("id", { count: "exact", head: true })
-      .eq("status", "approved");
+      .neq("status", "hidden")
+      .eq("type", "photo");
     if (typeof count === "number") setUnitCount(count);
   }, []);
 
@@ -84,7 +105,6 @@ export default function FeedPage() {
     if (error || !data) return;
     const list = data as unknown as PhotoWithGuest[];
     setRows(list);
-    newestRef.current = list[0]?.created_at ?? null;
     oldestRef.current = list[list.length - 1]?.created_at ?? null;
     setHasMore(list.length === PAGE_SIZE);
     setFreshIds(new Set());
@@ -96,45 +116,54 @@ export default function FeedPage() {
     refreshCount();
   }, [loadInitial, refreshCount]);
 
-  // Polling — only when tab visible.
+  // Realtime: subscribe to inserts on welchfest.photos.
   useEffect(() => {
     if (!bootstrapped) return;
-    let cancelled = false;
-    async function poll() {
-      if (cancelled || document.visibilityState !== "visible") return;
-      if (newestRef.current) {
-        const { data } = await buildQuery(tab, guestId)
-          .gt("created_at", newestRef.current)
-          .order("created_at", { ascending: false })
-          .limit(PAGE_SIZE);
-        if (data && data.length > 0) {
-          const fresh = data as unknown as PhotoWithGuest[];
+    const channel = supabase
+      .channel("welchfest-photos-feed")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "welchfest", table: "photos" },
+        (payload) => {
+          const incoming = payload.new as PhotoWithGuest;
+          if (incoming.status === "hidden") return;
+          if (tab === "photo" && incoming.type !== "photo") return;
+          if (tab === "360" && incoming.type !== "360") return;
+          if (tab === "mine" && incoming.guest_id !== guestId) return;
           setRows((prev) => {
-            const existing = new Set(prev.map((p) => p.id));
-            const dedup = fresh.filter((p) => !existing.has(p.id));
-            if (dedup.length === 0) return prev;
-            newestRef.current = dedup[0].created_at;
-            setFreshIds((set) => {
-              const next = new Set(set);
-              for (const p of dedup) next.add(p.id);
-              return next;
-            });
-            return [...dedup, ...prev];
+            if (prev.some((p) => p.id === incoming.id)) return prev;
+            return [incoming, ...prev];
+          });
+          setFreshIds((set) => {
+            const next = new Set(set);
+            next.add(incoming.id);
+            return next;
+          });
+          if (incoming.type === "photo") {
+            setUnitCount((c) => (c === null ? c : c + 1));
+          }
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "welchfest", table: "photos" },
+        (payload) => {
+          const updated = payload.new as PhotoWithGuest;
+          setRows((prev) => {
+            if (updated.status === "hidden") {
+              return prev.filter((p) => p.id !== updated.id);
+            }
+            return prev.map((p) => (p.id === updated.id ? { ...p, ...updated } : p));
           });
         }
-      }
-      refreshCount();
-    }
-    const id = window.setInterval(poll, POLL_MS);
-    document.addEventListener("visibilitychange", poll);
-    return () => {
-      cancelled = true;
-      window.clearInterval(id);
-      document.removeEventListener("visibilitychange", poll);
-    };
-  }, [bootstrapped, tab, guestId, refreshCount]);
+      )
+      .subscribe();
 
-  // Infinite scroll.
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [bootstrapped, tab, guestId]);
+
   const loadMore = useCallback(async () => {
     if (loadingMore || !hasMore || !oldestRef.current) return;
     setLoadingMore(true);
@@ -177,7 +206,6 @@ export default function FeedPage() {
 
   return (
     <main className="min-h-dvh bg-paper text-ink font-sans flex flex-col w-full max-w-md mx-auto relative">
-      {/* Top bar */}
       <div
         style={{
           padding: "12px 16px",
@@ -189,7 +217,7 @@ export default function FeedPage() {
           flexShrink: 0,
         }}
       >
-        <WelchMark size={28} color="#2275b3" />
+        <WelchMark size={28} mode="real" />
         <div style={{ flex: 1 }}>
           <WBLabel>Manifest in progress</WBLabel>
           <div
@@ -221,7 +249,6 @@ export default function FeedPage() {
         </div>
       </div>
 
-      {/* Tabs */}
       <div
         role="tablist"
         style={{
@@ -269,9 +296,8 @@ export default function FeedPage() {
         })}
       </div>
 
-      {/* Rows */}
       <div style={{ flex: 1, minHeight: 0, paddingBottom: 64 }}>
-        {rows.length === 0 && bootstrapped && (
+        {rows.length === 0 && bootstrapped ? (
           <div
             style={{
               padding: "40px 24px",
@@ -281,21 +307,25 @@ export default function FeedPage() {
               color: "var(--color-faded)",
               letterSpacing: "0.16em",
               textTransform: "uppercase",
+              lineHeight: 1.6,
             }}
           >
             {tab === "mine"
               ? "You haven't logged anything yet."
-              : "Manifest empty. Log the first unit."}
+              : tab === "360"
+                ? <>360° spheres land here.<br /><span style={{ fontSize: 9, opacity: 0.7 }}>Logged from the depot rig — coming through the night.</span></>
+                : "Manifest empty. Log the first unit."}
           </div>
+        ) : (
+          rows.map((p) => (
+            <EntryRow
+              key={p.id}
+              photo={p}
+              onOpen={() => setOpen(p)}
+              isFresh={freshIds.has(p.id)}
+            />
+          ))
         )}
-        {rows.map((p) => (
-          <EntryRow
-            key={p.id}
-            photo={p}
-            onOpen={() => setOpen(p)}
-            isFresh={freshIds.has(p.id)}
-          />
-        ))}
         <div ref={sentinelRef} style={{ height: 1 }} />
         {loadingMore && (
           <div
@@ -313,7 +343,6 @@ export default function FeedPage() {
         )}
       </div>
 
-      {/* Bottom bar */}
       <div
         className="fixed bottom-0 inset-x-0 mx-auto max-w-md"
         style={{
@@ -351,8 +380,10 @@ export default function FeedPage() {
             Awards
           </Link>
         </div>
-        <Link
-          href="/upload"
+        <button
+          type="button"
+          onClick={() => setUploadOpen(true)}
+          disabled={!bootstrapped}
           style={{
             background: "var(--color-blue-deep)",
             color: "var(--color-paper)",
@@ -362,14 +393,24 @@ export default function FeedPage() {
             fontWeight: 700,
             letterSpacing: "0.12em",
             boxShadow: "2px 2px 0 var(--color-ink)",
-            textDecoration: "none",
+            border: 0,
+            cursor: bootstrapped ? "pointer" : "not-allowed",
+            opacity: bootstrapped ? 1 : 0.5,
           }}
         >
           + LOG
-        </Link>
+        </button>
       </div>
 
       {open && <PhotoModal photo={open} onClose={() => setOpen(null)} />}
+      {uploadOpen && guestId && guestName && depot && (
+        <UploadSheet
+          guestId={guestId}
+          guestName={guestName}
+          depot={depot}
+          onClose={() => setUploadOpen(false)}
+        />
+      )}
     </main>
   );
 }
