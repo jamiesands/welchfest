@@ -9,9 +9,14 @@ import {
 } from "react";
 import WelchMark from "@/components/waybill/WelchMark";
 import { supabase } from "@/lib/supabase";
-import { SONG_COLS, sortQueue, type SongWithGuest } from "@/lib/songs";
+import {
+  SONG_COLS,
+  songDepot,
+  songGuestName,
+  sortQueue,
+  type SongWithGuest,
+} from "@/lib/songs";
 
-const POLL_MS = 3000;
 const QUEUED_STATUSES = ["queued", "cued"] as const;
 
 const DARK = {
@@ -57,15 +62,27 @@ export default function DjConsole() {
   }, [fetchAll]);
 
   useEffect(() => {
-    function tick() {
-      if (document.visibilityState !== "visible") return;
-      fetchAll();
-    }
-    const id = window.setInterval(tick, POLL_MS);
-    document.addEventListener("visibilitychange", tick);
+    const channel = supabase
+      .channel("welchfest-songs-dj")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "welchfest", table: "songs" },
+        () => {
+          fetchAll();
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "welchfest", table: "song_votes" },
+        () => {
+          // Vote count changes show up via the songs UPDATE event, but
+          // re-pull on vote churn too to keep ordering snappy.
+          fetchAll();
+        }
+      )
+      .subscribe();
     return () => {
-      window.clearInterval(id);
-      document.removeEventListener("visibilitychange", tick);
+      supabase.removeChannel(channel);
     };
   }, [fetchAll]);
 
@@ -76,7 +93,7 @@ export default function DjConsole() {
   }
 
   async function call(
-    path: "play-next" | "skip" | "block" | "cue",
+    path: "play-next" | "skip" | "block" | "cue" | "mark-played",
     body?: Record<string, unknown>
   ) {
     setBusy(true);
@@ -243,8 +260,8 @@ export default function DjConsole() {
                     marginTop: 2,
                   }}
                 >
-                  {playing.artist} · req. {playing.guest?.depot ?? "—"} ·{" "}
-                  {playing.votes_count} votes
+                  {playing.artist || "—"} · req. {songGuestName(playing)} ·{" "}
+                  {songDepot(playing)} · {playing.votes_count} votes
                 </div>
               </>
             ) : (
@@ -493,7 +510,7 @@ export default function DjConsole() {
                         whiteSpace: "nowrap",
                       }}
                     >
-                      {s.artist}
+                      {s.artist || "—"} · req. {songGuestName(s)}
                     </div>
                   </span>
                   <span
@@ -504,7 +521,7 @@ export default function DjConsole() {
                       fontWeight: 700,
                     }}
                   >
-                    {s.guest?.depot ?? "—"}
+                    {songDepot(s)}
                   </span>
                   <span
                     style={{
@@ -528,6 +545,15 @@ export default function DjConsole() {
                         CUE
                       </button>
                     )}
+                    <button
+                      type="button"
+                      onClick={() => call("mark-played", { song_id: s.id })}
+                      disabled={busy}
+                      title="Mark as played"
+                      style={miniBtn("primary", busy)}
+                    >
+                      ✓
+                    </button>
                     <button
                       type="button"
                       onClick={() => call("block", { song_id: s.id })}
