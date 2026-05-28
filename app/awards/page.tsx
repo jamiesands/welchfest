@@ -281,6 +281,9 @@ export default function AwardsPage() {
           >
             Awards
           </span>
+          <Link href="/designs" style={{ opacity: 0.55, color: "inherit" }}>
+            Design
+          </Link>
         </div>
         <div
           style={{

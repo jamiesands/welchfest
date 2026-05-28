@@ -379,6 +379,9 @@ export default function FeedPage() {
           <Link href="/awards" style={{ opacity: 0.55, color: "inherit" }}>
             Awards
           </Link>
+          <Link href="/designs" style={{ opacity: 0.55, color: "inherit" }}>
+            Design
+          </Link>
         </div>
         <button
           type="button"
