@@ -8,6 +8,9 @@ export type Photo = {
   unit_number: number;
   guest_id: string;
   storage_path: string;
+  image_url: string | null;
+  guest_name: string | null;
+  depot: string | null;
   type: PhotoType;
   caption: string | null;
   status: PhotoStatus;
@@ -18,6 +21,18 @@ export type Photo = {
 export type PhotoWithGuest = Photo & {
   guest: { name: string; depot: string } | null;
 };
+
+export function photoImageUrl(p: Pick<Photo, "image_url" | "storage_path">): string {
+  return p.image_url ?? publicUrl(p.storage_path);
+}
+
+export function photoGuestName(p: PhotoWithGuest): string {
+  return p.guest_name ?? p.guest?.name ?? "Guest";
+}
+
+export function photoDepot(p: PhotoWithGuest): string {
+  return p.depot ?? p.guest?.depot ?? "—";
+}
 
 export const BUCKET = "welchfest-photos";
 

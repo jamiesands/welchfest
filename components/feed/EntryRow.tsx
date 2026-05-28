@@ -1,4 +1,11 @@
-import { publicUrl, unit3, formatClock, type PhotoWithGuest } from "@/lib/photos";
+import {
+  photoDepot,
+  photoGuestName,
+  photoImageUrl,
+  unit3,
+  formatClock,
+  type PhotoWithGuest,
+} from "@/lib/photos";
 
 type Props = {
   photo: PhotoWithGuest;
@@ -67,7 +74,7 @@ export default function EntryRow({ photo, onOpen, isFresh }: Props) {
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={publicUrl(photo.storage_path)}
+          src={photoImageUrl(photo)}
           alt=""
           loading="lazy"
           style={{
@@ -141,7 +148,7 @@ export default function EntryRow({ photo, onOpen, isFresh }: Props) {
             marginTop: 2,
           }}
         >
-          {photo.guest?.name ?? "Guest"}{" "}
+          {photoGuestName(photo)}{" "}
           <span
             style={{
               fontFamily: "var(--font-mono)",
@@ -150,7 +157,7 @@ export default function EntryRow({ photo, onOpen, isFresh }: Props) {
               marginLeft: 4,
             }}
           >
-            {photo.guest?.depot ?? "—"}
+            {photoDepot(photo)}
           </span>
           {isPending && (
             <span
