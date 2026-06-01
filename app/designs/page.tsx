@@ -221,7 +221,7 @@ export default function DesignsPage() {
 
   return (
     <main className="min-h-dvh bg-paper text-ink font-sans flex flex-col w-full max-w-md mx-auto relative">
-      <WBLetterhead subtitle="Design Manifest" code="Form W/DSG" />
+      <WBLetterhead subtitle="Design a Lorry" code="Form W/DSG" />
 
       <form
         onSubmit={onSubmit}
@@ -375,10 +375,10 @@ export default function DesignsPage() {
               alignItems: "center",
             }}
           >
-            <span>{submitting ? "FILING…" : "SUBMIT CARGO"}</span>
+            <span>{submitting ? "SENDING…" : "SUBMIT DESIGN"}</span>
             <span aria-hidden>→</span>
           </button>
-          {justSubmitted && <WBStamp rotate={-8}>Submitted · cargo received</WBStamp>}
+          {justSubmitted && <WBStamp rotate={-8}>Submitted ✓</WBStamp>}
         </div>
       </form>
 
@@ -416,7 +416,7 @@ export default function DesignsPage() {
               textTransform: "uppercase",
             }}
           >
-            No cargo logged yet. Be the first.
+            No designs yet. Be the first.
           </div>
         ) : (
           <ul
@@ -462,7 +462,7 @@ export default function DesignsPage() {
           }}
         >
           <Link href="/feed" style={{ opacity: 0.55, color: "inherit" }}>
-            Manifest
+            Photos
           </Link>
           <Link href="/songs" style={{ opacity: 0.55, color: "inherit" }}>
             Songs

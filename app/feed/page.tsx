@@ -220,7 +220,7 @@ export default function FeedPage() {
       >
         <WelchMark size={28} mode="real" />
         <div style={{ flex: 1 }}>
-          <WBLabel>Manifest in progress</WBLabel>
+          <WBLabel>Party photos</WBLabel>
           <div
             style={{
               fontFamily: "var(--font-sans)",
@@ -230,11 +230,11 @@ export default function FeedPage() {
               marginTop: 2,
             }}
           >
-            Tonight&rsquo;s log
+            Photo wall
           </div>
         </div>
         <div style={{ textAlign: "right" }}>
-          <WBLabel>Units</WBLabel>
+          <WBLabel>Photos</WBLabel>
           <div
             style={{
               fontFamily: "var(--font-mono)",
@@ -318,10 +318,10 @@ export default function FeedPage() {
             }}
           >
             {tab === "mine"
-              ? "You haven't logged anything yet."
+              ? "You haven't added any photos yet."
               : tab === "360"
-                ? <>360° spheres land here.<br /><span style={{ fontSize: 9, opacity: 0.7 }}>Logged from the depot rig — coming through the night.</span></>
-                : "Manifest empty. Log the first unit."}
+                ? <>360° photos appear here.<br /><span style={{ fontSize: 9, opacity: 0.7 }}>Taken on the special camera — coming through the night.</span></>
+                : "No photos yet. Add the first one."}
           </div>
         ) : (
           rows.map((p) => (
@@ -378,7 +378,7 @@ export default function FeedPage() {
               paddingBottom: 2,
             }}
           >
-            Manifest
+            Photos
           </span>
           <Link href="/songs" style={{ opacity: 0.55, color: "inherit" }}>
             Songs

@@ -195,7 +195,7 @@ export default function SongsPage() {
         .insert({ song_id: data.id, guest_id: guestId });
       setTitle("");
       setArtist("");
-      flash("On the loading sheet.");
+      flash("Added to the queue.");
     } else {
       flash("Couldn't add — try again.");
     }
@@ -235,7 +235,7 @@ export default function SongsPage() {
 
   return (
     <main className="min-h-dvh bg-paper text-ink font-sans flex flex-col w-full max-w-md mx-auto relative">
-      <WBLetterhead subtitle="Loading Sheet" code="Cargo of the night" />
+      <WBLetterhead subtitle="Song Queue" code="Requests" />
 
       <WBHint>
         This is the song queue. Tap the <strong>↑</strong> arrow to vote a track
@@ -256,7 +256,7 @@ export default function SongsPage() {
         }}
       >
         <div>
-          <WBLabel>Queue · in line</WBLabel>
+          <WBLabel>Up next</WBLabel>
           <div
             style={{
               fontFamily: "var(--font-sans)",
@@ -328,7 +328,7 @@ export default function SongsPage() {
               padding: "8px 16px 4px",
             }}
           >
-            <WBLabel>Departed</WBLabel>
+            <WBLabel>Already played</WBLabel>
           </div>
         )}
         {played.map((s) => (
@@ -413,7 +413,7 @@ export default function SongsPage() {
           }}
         >
           <Link href="/feed" style={{ opacity: 0.55, color: "inherit" }}>
-            Manifest
+            Photos
           </Link>
           <span
             style={{
@@ -538,7 +538,7 @@ function QueueRow({
         >
           {song.title}
           {yours && <Pill bg="var(--color-stamp)">YOURS</Pill>}
-          {cued && <Pill bg="var(--color-blue-deep)">CUED</Pill>}
+          {cued && <Pill bg="var(--color-blue-deep)">NEXT</Pill>}
         </div>
         <div
           style={{
@@ -661,7 +661,7 @@ function DepartedRow({ song }: { song: SongWithGuest }) {
               textDecoration: "none",
             }}
           >
-            Departed
+            Played
           </span>
         </div>
         <div
@@ -793,7 +793,7 @@ function NowDeparting({ song }: { song: SongWithGuest | null }) {
               fontWeight: 600,
             }}
           >
-            Now departing
+            Now playing
           </div>
           {song ? (
             <>
@@ -830,7 +830,7 @@ function NowDeparting({ song }: { song: SongWithGuest | null }) {
                 lineHeight: 1.2,
               }}
             >
-              Awaiting first cargo.
+              Nothing playing yet.
             </div>
           )}
         </div>

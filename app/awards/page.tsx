@@ -208,10 +208,10 @@ export default function AwardsPage() {
               lineHeight: 1.6,
             }}
           >
-            No fleet logged yet.
+            No trucks added yet.
             <br />
             <span style={{ fontSize: 9, opacity: 0.7 }}>
-              Entries arrive before the ceremony.
+              Trucks appear here before judging.
             </span>
           </div>
         )}
@@ -273,7 +273,7 @@ export default function AwardsPage() {
           }}
         >
           <Link href="/feed" style={{ opacity: 0.55, color: "inherit" }}>
-            Manifest
+            Photos
           </Link>
           <Link href="/songs" style={{ opacity: 0.55, color: "inherit" }}>
             Songs
@@ -356,7 +356,7 @@ function BandSection({
             textTransform: "uppercase",
           }}
         >
-          No entries in this class
+          No trucks in this class yet
         </div>
       ) : (
         trucks.map((t) => (

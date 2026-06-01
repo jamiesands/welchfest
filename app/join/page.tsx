@@ -70,7 +70,7 @@ export default function JoinPage() {
           }}
         >
           <div style={{ flex: 1 }}>
-            <WBLabel style={{ marginBottom: 6 }}>Document Title</WBLabel>
+            <WBLabel style={{ marginBottom: 6 }}>Welcome</WBLabel>
             <div
               style={{
                 fontFamily: "var(--font-sans)",
@@ -109,8 +109,8 @@ export default function JoinPage() {
           }}
         />
 
-        {/* §01 — Consignee */}
-        <WBLabel style={{ marginBottom: 6 }}>01 · Consignee</WBLabel>
+        {/* §01 — Your name */}
+        <WBLabel style={{ marginBottom: 6 }}>01 · Your name</WBLabel>
         <div
           style={{
             borderBottom: "1.5px solid var(--color-ink)",
@@ -150,11 +150,11 @@ export default function JoinPage() {
           />
         </div>
 
-        {/* §02 — Origin Depot */}
-        <WBLabel style={{ marginBottom: 8 }}>02 · Origin Depot</WBLabel>
+        {/* §02 — Your depot */}
+        <WBLabel style={{ marginBottom: 8 }}>02 · Your depot</WBLabel>
         <div
           role="radiogroup"
-          aria-label="Origin depot"
+          aria-label="Your depot"
           style={{
             display: "grid",
             gridTemplateColumns: "1fr 1fr",
@@ -234,8 +234,8 @@ export default function JoinPage() {
           })}
         </div>
 
-        {/* §03 — Acknowledgement */}
-        <WBLabel style={{ marginBottom: 6 }}>03 · Acknowledgement</WBLabel>
+        {/* §03 — Consent */}
+        <WBLabel style={{ marginBottom: 6 }}>03 · Consent</WBLabel>
         <label
           style={{
             display: "flex",
@@ -287,10 +287,10 @@ export default function JoinPage() {
             />
           </span>
           <span style={{ fontSize: 11, lineHeight: 1.4 }}>
-            I consent to my likeness being entered into the official manifest.
-            Light moderation applies. Copy retained:{" "}
+            I&rsquo;m happy for my photos to appear on the party wall. Anything
+            unwanted can be{" "}
             <span style={{ color: "var(--color-blue)", fontWeight: 600 }}>
-              Guest
+              hidden
             </span>
             .
           </span>
