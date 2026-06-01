@@ -26,7 +26,7 @@ export type SongWithGuest = Song & {
 };
 
 export const SONG_COLS =
-  "id, guest_id, guest_name, depot, title, artist, status, votes_count, requested_at, cued_at, started_playing_at, finished_playing_at, guest:guests(name, depot)";
+  "id, guest_id, guest_name, depot, title, artist, status, votes_count, requested_at, cued_at, started_playing_at, finished_playing_at, guest:guests!songs_guest_id_fkey(name, depot)";
 
 export function songGuestName(s: SongWithGuest): string {
   return s.guest_name ?? s.guest?.name ?? "Guest";

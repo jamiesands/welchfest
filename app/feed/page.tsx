@@ -11,6 +11,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import WelchMark from "@/components/waybill/WelchMark";
 import WBLabel from "@/components/waybill/WBLabel";
+import WBHint from "@/components/waybill/WBHint";
 import EntryRow from "@/components/feed/EntryRow";
 import PhotoModal from "@/components/feed/PhotoModal";
 import UploadSheet from "@/components/feed/UploadSheet";
@@ -219,7 +220,7 @@ export default function FeedPage() {
       >
         <WelchMark size={28} mode="real" />
         <div style={{ flex: 1 }}>
-          <WBLabel>Manifest in progress</WBLabel>
+          <WBLabel>Party photos</WBLabel>
           <div
             style={{
               fontFamily: "var(--font-sans)",
@@ -229,11 +230,11 @@ export default function FeedPage() {
               marginTop: 2,
             }}
           >
-            Tonight&rsquo;s log
+            Photo wall
           </div>
         </div>
         <div style={{ textAlign: "right" }}>
-          <WBLabel>Units</WBLabel>
+          <WBLabel>Photos</WBLabel>
           <div
             style={{
               fontFamily: "var(--font-mono)",
@@ -248,6 +249,12 @@ export default function FeedPage() {
           </div>
         </div>
       </div>
+
+      <WBHint>
+        The live photo wall. Tap <strong>+ Add Photo</strong> to post yours —
+        everyone sees it straight away. Use the tabs to switch between photos,
+        360° shots, and your own.
+      </WBHint>
 
       <div
         role="tablist"
@@ -311,10 +318,10 @@ export default function FeedPage() {
             }}
           >
             {tab === "mine"
-              ? "You haven't logged anything yet."
+              ? "You haven't added any photos yet."
               : tab === "360"
-                ? <>360° spheres land here.<br /><span style={{ fontSize: 9, opacity: 0.7 }}>Logged from the depot rig — coming through the night.</span></>
-                : "Manifest empty. Log the first unit."}
+                ? <>360° photos appear here.<br /><span style={{ fontSize: 9, opacity: 0.7 }}>Taken on the special camera — coming through the night.</span></>
+                : "No photos yet. Add the first one."}
           </div>
         ) : (
           rows.map((p) => (
@@ -371,7 +378,7 @@ export default function FeedPage() {
               paddingBottom: 2,
             }}
           >
-            Manifest
+            Photos
           </span>
           <Link href="/songs" style={{ opacity: 0.55, color: "inherit" }}>
             Songs
@@ -390,18 +397,19 @@ export default function FeedPage() {
           style={{
             background: "var(--color-blue-deep)",
             color: "var(--color-paper)",
-            padding: "8px 10px",
+            padding: "11px 14px",
+            minHeight: 44,
             fontFamily: "var(--font-mono)",
             fontSize: 10,
             fontWeight: 700,
-            letterSpacing: "0.12em",
+            letterSpacing: "0.1em",
             boxShadow: "2px 2px 0 var(--color-ink)",
             border: 0,
             cursor: bootstrapped ? "pointer" : "not-allowed",
             opacity: bootstrapped ? 1 : 0.5,
           }}
         >
-          + LOG
+          + ADD PHOTO
         </button>
       </div>
 

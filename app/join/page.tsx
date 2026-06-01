@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import WBLetterhead from "@/components/waybill/WBLetterhead";
 import WBLabel from "@/components/waybill/WBLabel";
 import WBPostmark from "@/components/waybill/WBPostmark";
+import WBHint from "@/components/waybill/WBHint";
 import { supabase } from "@/lib/supabase";
 
 type DepotCode = "DXF" | "BED" | "STI" | "GUEST";
@@ -49,6 +50,12 @@ export default function JoinPage() {
     <main className="min-h-dvh bg-paper text-ink font-sans flex flex-col w-full max-w-md mx-auto">
       <WBLetterhead />
 
+      <WBHint>
+        Welcome! Three quick steps: type your name, tap which depot you&rsquo;re
+        from, tick the box, then <strong>Sign &amp; Enter</strong>. Takes about
+        ten seconds.
+      </WBHint>
+
       <form
         onSubmit={onSubmit}
         className="flex-1 flex flex-col"
@@ -63,7 +70,7 @@ export default function JoinPage() {
           }}
         >
           <div style={{ flex: 1 }}>
-            <WBLabel style={{ marginBottom: 6 }}>Document Title</WBLabel>
+            <WBLabel style={{ marginBottom: 6 }}>Welcome</WBLabel>
             <div
               style={{
                 fontFamily: "var(--font-sans)",
@@ -102,8 +109,8 @@ export default function JoinPage() {
           }}
         />
 
-        {/* §01 — Consignee */}
-        <WBLabel style={{ marginBottom: 6 }}>01 · Consignee</WBLabel>
+        {/* §01 — Your name */}
+        <WBLabel style={{ marginBottom: 6 }}>01 · Your name</WBLabel>
         <div
           style={{
             borderBottom: "1.5px solid var(--color-ink)",
@@ -143,11 +150,11 @@ export default function JoinPage() {
           />
         </div>
 
-        {/* §02 — Origin Depot */}
-        <WBLabel style={{ marginBottom: 8 }}>02 · Origin Depot</WBLabel>
+        {/* §02 — Your depot */}
+        <WBLabel style={{ marginBottom: 8 }}>02 · Your depot</WBLabel>
         <div
           role="radiogroup"
-          aria-label="Origin depot"
+          aria-label="Your depot"
           style={{
             display: "grid",
             gridTemplateColumns: "1fr 1fr",
@@ -227,8 +234,8 @@ export default function JoinPage() {
           })}
         </div>
 
-        {/* §03 — Acknowledgement */}
-        <WBLabel style={{ marginBottom: 6 }}>03 · Acknowledgement</WBLabel>
+        {/* §03 — Consent */}
+        <WBLabel style={{ marginBottom: 6 }}>03 · Consent</WBLabel>
         <label
           style={{
             display: "flex",
@@ -240,8 +247,8 @@ export default function JoinPage() {
         >
           <span
             style={{
-              width: 14,
-              height: 14,
+              width: 22,
+              height: 22,
               border: "1.5px solid var(--color-ink)",
               marginTop: 1,
               position: "relative",
@@ -254,9 +261,9 @@ export default function JoinPage() {
                 aria-hidden
                 style={{
                   position: "absolute",
-                  left: 1,
-                  top: -3,
-                  fontSize: 16,
+                  left: 3,
+                  top: -1,
+                  fontSize: 22,
                   fontFamily: "var(--font-mono)",
                   color: "var(--color-blue)",
                   lineHeight: 1,
@@ -280,10 +287,10 @@ export default function JoinPage() {
             />
           </span>
           <span style={{ fontSize: 11, lineHeight: 1.4 }}>
-            I consent to my likeness being entered into the official manifest.
-            Light moderation applies. Copy retained:{" "}
+            I&rsquo;m happy for my photos to appear on the party wall. Anything
+            unwanted can be{" "}
             <span style={{ color: "var(--color-blue)", fontWeight: 600 }}>
-              Guest
+              hidden
             </span>
             .
           </span>

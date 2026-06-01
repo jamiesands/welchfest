@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation";
 import WBLetterhead from "@/components/waybill/WBLetterhead";
 import WBLabel from "@/components/waybill/WBLabel";
 import WBStamp from "@/components/waybill/WBStamp";
+import WBHint from "@/components/waybill/WBHint";
 import { supabase } from "@/lib/supabase";
 import {
   BAND_LABEL,
@@ -188,6 +189,11 @@ export default function AwardsPage() {
     <main className="min-h-dvh bg-paper text-ink font-sans flex flex-col w-full max-w-md mx-auto relative">
       <WBLetterhead subtitle="Best Truck" code="Form W/AWD" />
 
+      <WBHint>
+        Vote for your favourite truck in each class below. You get{" "}
+        <strong>one vote per class</strong> and it&rsquo;s final, so choose well.
+      </WBHint>
+
       <div style={{ flex: 1, paddingBottom: 64 }}>
         {bootstrapped && trucks.length === 0 && (
           <div
@@ -202,10 +208,10 @@ export default function AwardsPage() {
               lineHeight: 1.6,
             }}
           >
-            No fleet logged yet.
+            No trucks added yet.
             <br />
             <span style={{ fontSize: 9, opacity: 0.7 }}>
-              Entries arrive before the ceremony.
+              Trucks appear here before judging.
             </span>
           </div>
         )}
@@ -267,7 +273,7 @@ export default function AwardsPage() {
           }}
         >
           <Link href="/feed" style={{ opacity: 0.55, color: "inherit" }}>
-            Manifest
+            Photos
           </Link>
           <Link href="/songs" style={{ opacity: 0.55, color: "inherit" }}>
             Songs
@@ -350,7 +356,7 @@ function BandSection({
             textTransform: "uppercase",
           }}
         >
-          No entries in this class
+          No trucks in this class yet
         </div>
       ) : (
         trucks.map((t) => (
@@ -499,9 +505,10 @@ function TruckRow({
               background: "var(--color-blue-deep)",
               color: "var(--color-paper)",
               border: "none",
-              padding: "10px 14px",
+              padding: "12px 18px",
+              minHeight: 44,
               fontFamily: "var(--font-mono)",
-              fontSize: 11,
+              fontSize: 12,
               fontWeight: 700,
               letterSpacing: "0.18em",
               cursor: submitting ? "wait" : "pointer",

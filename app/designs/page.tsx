@@ -221,7 +221,7 @@ export default function DesignsPage() {
 
   return (
     <main className="min-h-dvh bg-paper text-ink font-sans flex flex-col w-full max-w-md mx-auto relative">
-      <WBLetterhead subtitle="Design Manifest" code="Form W/DSG" />
+      <WBLetterhead subtitle="Design a Lorry" code="Form W/DSG" />
 
       <form
         onSubmit={onSubmit}
@@ -311,7 +311,7 @@ export default function DesignsPage() {
                   padding: 22,
                 }}
               >
-                Tap to capture or choose
+                Tap to choose a photo or take one
                 <br />
                 <span style={{ fontSize: 9, opacity: 0.7 }}>
                   JPG · PNG · HEIC · ≤25MB
@@ -322,15 +322,9 @@ export default function DesignsPage() {
               ref={fileInputRef}
               type="file"
               accept="image/*"
-              capture="environment"
               onChange={onPickFile}
-              style={{
-                position: "absolute",
-                inset: 0,
-                opacity: 0,
-                cursor: "pointer",
-              }}
-              aria-label="Capture or choose image"
+              style={{ display: "none" }}
+              aria-label="Choose a photo or take one"
             />
           </div>
         </div>
@@ -375,10 +369,10 @@ export default function DesignsPage() {
               alignItems: "center",
             }}
           >
-            <span>{submitting ? "FILING…" : "SUBMIT CARGO"}</span>
+            <span>{submitting ? "SENDING…" : "SUBMIT DESIGN"}</span>
             <span aria-hidden>→</span>
           </button>
-          {justSubmitted && <WBStamp rotate={-8}>Submitted · cargo received</WBStamp>}
+          {justSubmitted && <WBStamp rotate={-8}>Submitted ✓</WBStamp>}
         </div>
       </form>
 
@@ -416,7 +410,7 @@ export default function DesignsPage() {
               textTransform: "uppercase",
             }}
           >
-            No cargo logged yet. Be the first.
+            No designs yet. Be the first.
           </div>
         ) : (
           <ul
@@ -462,7 +456,7 @@ export default function DesignsPage() {
           }}
         >
           <Link href="/feed" style={{ opacity: 0.55, color: "inherit" }}>
-            Manifest
+            Photos
           </Link>
           <Link href="/songs" style={{ opacity: 0.55, color: "inherit" }}>
             Songs

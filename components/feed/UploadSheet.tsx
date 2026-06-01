@@ -126,7 +126,7 @@ export default function UploadSheet({ guestId, guestName, depot, onClose }: Prop
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="Log a photo to the manifest"
+      aria-label="Add a photo"
       onClick={onClose}
       style={{
         position: "fixed",
@@ -155,7 +155,7 @@ export default function UploadSheet({ guestId, guestName, depot, onClose }: Prop
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
           <div>
-            <WBLabel>New Entry</WBLabel>
+            <WBLabel>New photo</WBLabel>
             <div
               style={{
                 fontFamily: "var(--font-sans)",
@@ -165,7 +165,7 @@ export default function UploadSheet({ guestId, guestName, depot, onClose }: Prop
                 marginTop: 4,
               }}
             >
-              Log a unit
+              Add a photo
             </div>
           </div>
           <button
@@ -225,7 +225,7 @@ export default function UploadSheet({ guestId, guestName, depot, onClose }: Prop
                 padding: 24,
               }}
             >
-              Tap to capture or choose
+              Tap to choose a photo or take one
               <br />
               <span style={{ fontSize: 9, opacity: 0.7 }}>JPG · PNG · HEIC · ≤25MB</span>
             </div>
@@ -234,10 +234,9 @@ export default function UploadSheet({ guestId, guestName, depot, onClose }: Prop
             ref={fileInputRef}
             type="file"
             accept="image/*"
-            capture="environment"
             onChange={pickFile}
-            style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer" }}
-            aria-label="Capture or choose image"
+            style={{ display: "none" }}
+            aria-label="Choose a photo or take one"
           />
         </div>
 
@@ -312,7 +311,7 @@ export default function UploadSheet({ guestId, guestName, depot, onClose }: Prop
             opacity: canSubmit ? 1 : 0.55,
           }}
         >
-          <span>{submitting ? "FILING…" : "LOG TO MANIFEST"}</span>
+          <span>{submitting ? "ADDING…" : "ADD PHOTO"}</span>
           <span aria-hidden>→</span>
         </button>
       </form>
