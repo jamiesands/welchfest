@@ -1,30 +1,37 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
+const COLS =
+  "id, unit_number, guest_id, storage_path, type, caption, status, created_at, moderated_at, guest:guests(name, depot)";
+
+// Moderation now works on already-published photos: `live` is everything
+// guests can see, `removed` is anything pulled. The client lets a moderator
+// hide a live photo or restore a removed one.
 export async function GET() {
   const sb = supabaseAdmin();
-  const [pendingRes, hiddenRes] = await Promise.all([
+  const [liveRes, removedRes] = await Promise.all([
     sb
       .from("photos")
-      .select("id, unit_number, guest_id, storage_path, type, caption, status, created_at, moderated_at, guest:guests(name, depot)")
-      .eq("status", "pending")
-      .order("created_at", { ascending: true })
-      .limit(100),
+      .select(COLS)
+      .eq("status", "approved")
+      .order("created_at", { ascending: false })
+      .limit(200),
     sb
       .from("photos")
-      .select("id", { count: "exact", head: true })
+      .select(COLS)
       .eq("status", "hidden")
-      .gte("moderated_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
+      .order("moderated_at", { ascending: false, nullsFirst: false })
+      .limit(200),
   ]);
 
-  if (pendingRes.error || hiddenRes.error) {
+  if (liveRes.error || removedRes.error) {
     return NextResponse.json(
-      { error: pendingRes.error?.message ?? hiddenRes.error?.message },
+      { error: liveRes.error?.message ?? removedRes.error?.message },
       { status: 500 }
     );
   }
   return NextResponse.json({
-    pending: pendingRes.data ?? [],
-    hiddenToday: hiddenRes.count ?? 0,
+    live: liveRes.data ?? [],
+    removed: removedRes.data ?? [],
   });
 }
