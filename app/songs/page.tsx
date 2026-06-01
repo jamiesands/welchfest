@@ -12,6 +12,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import WBLetterhead from "@/components/waybill/WBLetterhead";
 import WBLabel from "@/components/waybill/WBLabel";
+import WBHint from "@/components/waybill/WBHint";
 import { supabase } from "@/lib/supabase";
 import {
   DONE_STATUSES,
@@ -236,6 +237,12 @@ export default function SongsPage() {
     <main className="min-h-dvh bg-paper text-ink font-sans flex flex-col w-full max-w-md mx-auto relative">
       <WBLetterhead subtitle="Loading Sheet" code="Cargo of the night" />
 
+      <WBHint>
+        This is the song queue. Tap the <strong>↑</strong> arrow to vote a track
+        up the list, or add your own at the bottom. The DJ plays whatever&rsquo;s
+        nearest the top.
+      </WBHint>
+
       <NowDeparting song={nowPlaying} />
 
       {/* Queue header */}
@@ -367,9 +374,10 @@ export default function SongsPage() {
           style={{
             background: "var(--color-blue-deep)",
             color: "var(--color-paper)",
-            padding: "8px 10px",
+            padding: "12px 16px",
+            minHeight: 44,
             fontFamily: "var(--font-mono)",
-            fontSize: 10,
+            fontSize: 11,
             fontWeight: 700,
             letterSpacing: "0.12em",
             boxShadow: "2px 2px 0 var(--color-ink)",
@@ -568,8 +576,8 @@ function QueueRow({
           <span
             aria-hidden
             style={{
-              width: 24,
-              height: 24,
+              width: 44,
+              height: 44,
               display: "inline-flex",
               alignItems: "center",
               justifyContent: "center",
@@ -588,14 +596,14 @@ function QueueRow({
             aria-label={voted ? "Voted" : "Upvote"}
             aria-pressed={voted}
             style={{
-              width: 24,
-              height: 24,
+              width: 44,
+              height: 44,
               border: "1.5px solid var(--color-blue-deep)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               fontFamily: "var(--font-mono)",
-              fontSize: 14,
+              fontSize: 20,
               fontWeight: 700,
               background: voted ? "var(--color-blue-deep)" : "transparent",
               color: voted ? "var(--color-paper)" : "var(--color-blue-deep)",

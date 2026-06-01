@@ -11,6 +11,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import WelchMark from "@/components/waybill/WelchMark";
 import WBLabel from "@/components/waybill/WBLabel";
+import WBHint from "@/components/waybill/WBHint";
 import EntryRow from "@/components/feed/EntryRow";
 import PhotoModal from "@/components/feed/PhotoModal";
 import UploadSheet from "@/components/feed/UploadSheet";
@@ -249,6 +250,12 @@ export default function FeedPage() {
         </div>
       </div>
 
+      <WBHint>
+        The live photo wall. Tap <strong>+ Add Photo</strong> to post yours —
+        everyone sees it straight away. Use the tabs to switch between photos,
+        360° shots, and your own.
+      </WBHint>
+
       <div
         role="tablist"
         style={{
@@ -390,18 +397,19 @@ export default function FeedPage() {
           style={{
             background: "var(--color-blue-deep)",
             color: "var(--color-paper)",
-            padding: "8px 10px",
+            padding: "11px 14px",
+            minHeight: 44,
             fontFamily: "var(--font-mono)",
             fontSize: 10,
             fontWeight: 700,
-            letterSpacing: "0.12em",
+            letterSpacing: "0.1em",
             boxShadow: "2px 2px 0 var(--color-ink)",
             border: 0,
             cursor: bootstrapped ? "pointer" : "not-allowed",
             opacity: bootstrapped ? 1 : 0.5,
           }}
         >
-          + LOG
+          + ADD PHOTO
         </button>
       </div>
 

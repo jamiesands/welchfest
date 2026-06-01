@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import WBLetterhead from "@/components/waybill/WBLetterhead";
 import WBLabel from "@/components/waybill/WBLabel";
 import WBPostmark from "@/components/waybill/WBPostmark";
+import WBHint from "@/components/waybill/WBHint";
 import { supabase } from "@/lib/supabase";
 
 type DepotCode = "DXF" | "BED" | "STI" | "GUEST";
@@ -48,6 +49,12 @@ export default function JoinPage() {
   return (
     <main className="min-h-dvh bg-paper text-ink font-sans flex flex-col w-full max-w-md mx-auto">
       <WBLetterhead />
+
+      <WBHint>
+        Welcome! Three quick steps: type your name, tap which depot you&rsquo;re
+        from, tick the box, then <strong>Sign &amp; Enter</strong>. Takes about
+        ten seconds.
+      </WBHint>
 
       <form
         onSubmit={onSubmit}
@@ -240,8 +247,8 @@ export default function JoinPage() {
         >
           <span
             style={{
-              width: 14,
-              height: 14,
+              width: 22,
+              height: 22,
               border: "1.5px solid var(--color-ink)",
               marginTop: 1,
               position: "relative",
@@ -254,9 +261,9 @@ export default function JoinPage() {
                 aria-hidden
                 style={{
                   position: "absolute",
-                  left: 1,
-                  top: -3,
-                  fontSize: 16,
+                  left: 3,
+                  top: -1,
+                  fontSize: 22,
                   fontFamily: "var(--font-mono)",
                   color: "var(--color-blue)",
                   lineHeight: 1,
