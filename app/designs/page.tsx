@@ -311,7 +311,7 @@ export default function DesignsPage() {
                   padding: 22,
                 }}
               >
-                Tap to capture or choose
+                Tap to choose a photo or take one
                 <br />
                 <span style={{ fontSize: 9, opacity: 0.7 }}>
                   JPG · PNG · HEIC · ≤25MB
@@ -322,15 +322,9 @@ export default function DesignsPage() {
               ref={fileInputRef}
               type="file"
               accept="image/*"
-              capture="environment"
               onChange={onPickFile}
-              style={{
-                position: "absolute",
-                inset: 0,
-                opacity: 0,
-                cursor: "pointer",
-              }}
-              aria-label="Capture or choose image"
+              style={{ display: "none" }}
+              aria-label="Choose a photo or take one"
             />
           </div>
         </div>
