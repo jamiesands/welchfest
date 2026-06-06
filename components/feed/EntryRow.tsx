@@ -43,7 +43,7 @@ export default function EntryRow({ photo, onOpen, isFresh }: Props) {
         <div
           style={{
             fontFamily: "var(--font-mono)",
-            fontSize: 9,
+            fontSize: 11,
             color: "var(--color-faded)",
             letterSpacing: "0.1em",
           }}
@@ -53,7 +53,7 @@ export default function EntryRow({ photo, onOpen, isFresh }: Props) {
         <div
           style={{
             fontFamily: "var(--font-mono)",
-            fontSize: 14,
+            fontSize: 16,
             fontWeight: 700,
           }}
         >
@@ -122,7 +122,7 @@ export default function EntryRow({ photo, onOpen, isFresh }: Props) {
             display: "flex",
             justifyContent: "space-between",
             fontFamily: "var(--font-mono)",
-            fontSize: 9,
+            fontSize: 11,
             color: "var(--color-faded)",
             letterSpacing: "0.06em",
           }}
@@ -143,7 +143,7 @@ export default function EntryRow({ photo, onOpen, isFresh }: Props) {
         <div
           style={{
             fontFamily: "var(--font-sans)",
-            fontSize: 13,
+            fontSize: 15,
             fontWeight: 600,
             marginTop: 2,
           }}
@@ -152,7 +152,7 @@ export default function EntryRow({ photo, onOpen, isFresh }: Props) {
           <span
             style={{
               fontFamily: "var(--font-mono)",
-              fontSize: 10,
+              fontSize: 12,
               color: "var(--color-blue)",
               marginLeft: 4,
             }}
@@ -163,7 +163,7 @@ export default function EntryRow({ photo, onOpen, isFresh }: Props) {
             <span
               style={{
                 fontFamily: "var(--font-mono)",
-                fontSize: 8.5,
+                fontSize: 10,
                 padding: "1px 4px",
                 marginLeft: 6,
                 background: "var(--color-olive)",
@@ -179,7 +179,7 @@ export default function EntryRow({ photo, onOpen, isFresh }: Props) {
         {photo.caption && (
           <div
             style={{
-              fontSize: 11,
+              fontSize: 13,
               marginTop: 2,
               color: "var(--color-ink)",
               opacity: 0.75,

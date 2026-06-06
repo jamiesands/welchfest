@@ -159,7 +159,7 @@ export default function UploadSheet({ guestId, guestName, depot, onClose }: Prop
             <div
               style={{
                 fontFamily: "var(--font-sans)",
-                fontSize: 18,
+                fontSize: 21,
                 fontWeight: 700,
                 lineHeight: 1,
                 marginTop: 4,
@@ -178,7 +178,7 @@ export default function UploadSheet({ guestId, guestName, depot, onClose }: Prop
               color: "var(--color-ink)",
               padding: "4px 10px",
               fontFamily: "var(--font-mono)",
-              fontSize: 12,
+              fontSize: 14,
               cursor: "pointer",
             }}
           >
@@ -217,7 +217,7 @@ export default function UploadSheet({ guestId, guestName, depot, onClose }: Prop
             <div
               style={{
                 fontFamily: "var(--font-mono)",
-                fontSize: 11,
+                fontSize: 13,
                 color: "var(--color-faded)",
                 letterSpacing: "0.16em",
                 textTransform: "uppercase",
@@ -227,7 +227,7 @@ export default function UploadSheet({ guestId, guestName, depot, onClose }: Prop
             >
               Tap to choose a photo or take one
               <br />
-              <span style={{ fontSize: 9, opacity: 0.7 }}>JPG · PNG · HEIC · ≤25MB</span>
+              <span style={{ fontSize: 11, opacity: 0.7 }}>JPG · PNG · HEIC · ≤25MB</span>
             </div>
           )}
           <input
@@ -251,7 +251,7 @@ export default function UploadSheet({ guestId, guestName, depot, onClose }: Prop
               className="w-full bg-transparent outline-none resize-none placeholder:text-faded/60"
               style={{
                 fontFamily: "var(--font-sans)",
-                fontSize: 15,
+                fontSize: 18,
                 fontWeight: 500,
                 color: "var(--color-ink)",
                 lineHeight: 1.3,
@@ -261,7 +261,7 @@ export default function UploadSheet({ guestId, guestName, depot, onClose }: Prop
           <div
             style={{
               fontFamily: "var(--font-mono)",
-              fontSize: 9,
+              fontSize: 11,
               color: "var(--color-faded)",
               letterSpacing: "0.1em",
               textAlign: "right",
@@ -277,7 +277,7 @@ export default function UploadSheet({ guestId, guestName, depot, onClose }: Prop
             role="alert"
             style={{
               fontFamily: "var(--font-mono)",
-              fontSize: 10,
+              fontSize: 12,
               letterSpacing: "0.14em",
               textTransform: "uppercase",
               color: "var(--color-stamp)",
@@ -303,7 +303,7 @@ export default function UploadSheet({ guestId, guestName, depot, onClose }: Prop
             alignItems: "center",
             fontFamily: "var(--font-mono)",
             letterSpacing: "0.18em",
-            fontSize: 12,
+            fontSize: 14,
             fontWeight: 600,
             width: "100%",
             border: "none",

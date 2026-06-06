@@ -236,7 +236,7 @@ export default function DesignsPage() {
         <div
           style={{
             fontFamily: "var(--font-sans)",
-            fontSize: 13.5,
+            fontSize: 16,
             lineHeight: 1.4,
           }}
         >
@@ -303,7 +303,7 @@ export default function DesignsPage() {
               <div
                 style={{
                   fontFamily: "var(--font-mono)",
-                  fontSize: 11,
+                  fontSize: 13,
                   color: "var(--color-faded)",
                   letterSpacing: "0.16em",
                   textTransform: "uppercase",
@@ -313,7 +313,7 @@ export default function DesignsPage() {
               >
                 Tap to choose a photo or take one
                 <br />
-                <span style={{ fontSize: 9, opacity: 0.7 }}>
+                <span style={{ fontSize: 11, opacity: 0.7 }}>
                   JPG · PNG · HEIC · ≤25MB
                 </span>
               </div>
@@ -334,7 +334,7 @@ export default function DesignsPage() {
             role="alert"
             style={{
               fontFamily: "var(--font-mono)",
-              fontSize: 10,
+              fontSize: 12,
               letterSpacing: "0.14em",
               textTransform: "uppercase",
               color: "var(--color-stamp)",
@@ -359,7 +359,7 @@ export default function DesignsPage() {
               padding: "13px 16px",
               fontFamily: "var(--font-mono)",
               letterSpacing: "0.18em",
-              fontSize: 12,
+              fontSize: 14,
               fontWeight: 600,
               border: "none",
               cursor: canSubmit ? "pointer" : "not-allowed",
@@ -388,7 +388,7 @@ export default function DesignsPage() {
         <span
           style={{
             fontFamily: "var(--font-mono)",
-            fontSize: 9,
+            fontSize: 11,
             color: "var(--color-faded)",
             letterSpacing: "0.14em",
           }}
@@ -404,7 +404,7 @@ export default function DesignsPage() {
               padding: "30px 24px",
               textAlign: "center",
               fontFamily: "var(--font-mono)",
-              fontSize: 11,
+              fontSize: 13,
               color: "var(--color-faded)",
               letterSpacing: "0.16em",
               textTransform: "uppercase",
@@ -441,49 +441,41 @@ export default function DesignsPage() {
           background: "var(--color-card)",
           display: "flex",
           padding: "10px 14px",
-          justifyContent: "space-between",
           alignItems: "center",
+          fontFamily: "var(--font-mono)",
+          fontSize: 15,
+          letterSpacing: "0.12em",
+          textTransform: "uppercase",
         }}
       >
-        <div
-          style={{
-            display: "flex",
-            gap: 16,
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            letterSpacing: "0.12em",
-            textTransform: "uppercase",
-          }}
+        <Link
+          href="/feed"
+          style={{ flex: 1, textAlign: "center", opacity: 0.55, color: "inherit" }}
         >
-          <Link href="/feed" style={{ opacity: 0.55, color: "inherit" }}>
-            Photos
-          </Link>
-          <Link href="/songs" style={{ opacity: 0.55, color: "inherit" }}>
-            Songs
-          </Link>
-          <Link href="/awards" style={{ opacity: 0.55, color: "inherit" }}>
-            Awards
-          </Link>
+          Photos
+        </Link>
+        <Link
+          href="/songs"
+          style={{ flex: 1, textAlign: "center", opacity: 0.55, color: "inherit" }}
+        >
+          Songs
+        </Link>
+        <Link
+          href="/awards"
+          style={{ flex: 1, textAlign: "center", opacity: 0.55, color: "inherit" }}
+        >
+          Awards
+        </Link>
+        <span style={{ flex: 1, textAlign: "center", fontWeight: 700 }}>
           <span
             style={{
-              fontWeight: 700,
               borderBottom: "2px solid var(--color-blue-deep)",
               paddingBottom: 2,
             }}
           >
             Design
           </span>
-        </div>
-        <div
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 9,
-            color: "var(--color-faded)",
-            letterSpacing: "0.12em",
-          }}
-        >
-          FORM W/DSG
-        </div>
+        </span>
       </div>
 
       {open && <Lightbox design={open} onClose={() => setOpen(null)} />}
@@ -541,7 +533,7 @@ function DesignCard({
       >
         <div
           style={{
-            fontSize: 11,
+            fontSize: 13,
             fontWeight: 700,
             color: "var(--color-ink)",
             whiteSpace: "nowrap",
@@ -554,7 +546,7 @@ function DesignCard({
         {design.employee_name && (
           <div
             style={{
-              fontSize: 9,
+              fontSize: 11,
               color: "var(--color-blue)",
               letterSpacing: "0.1em",
               marginTop: 1,
@@ -568,7 +560,7 @@ function DesignCard({
         )}
         <div
           style={{
-            fontSize: 9,
+            fontSize: 11,
             color: "var(--color-faded)",
             letterSpacing: "0.12em",
             marginTop: 1,
@@ -618,7 +610,7 @@ function Lightbox({ design, onClose }: { design: Design; onClose: () => void }) 
           padding: "14px 18px",
           color: "var(--color-paper)",
           fontFamily: "var(--font-mono)",
-          fontSize: 11,
+          fontSize: 13,
           letterSpacing: "0.16em",
           flexShrink: 0,
         }}
@@ -642,7 +634,7 @@ function Lightbox({ design, onClose }: { design: Design; onClose: () => void }) 
             color: "var(--color-paper)",
             padding: "4px 10px",
             fontFamily: "var(--font-mono)",
-            fontSize: 14,
+            fontSize: 16,
             cursor: "pointer",
           }}
         >
@@ -677,7 +669,7 @@ function Lightbox({ design, onClose }: { design: Design; onClose: () => void }) 
           padding: "14px 18px 22px",
           color: "rgba(239,232,212,0.6)",
           fontFamily: "var(--font-mono)",
-          fontSize: 10,
+          fontSize: 12,
           letterSpacing: "0.14em",
           flexShrink: 0,
         }}
@@ -696,7 +688,7 @@ const inputStyle: React.CSSProperties = {
   background: "var(--color-paper)",
   padding: "8px 10px",
   fontFamily: "var(--font-mono)",
-  fontSize: 12,
+  fontSize: 14,
   color: "var(--color-ink)",
   outline: "none",
   letterSpacing: "0.04em",

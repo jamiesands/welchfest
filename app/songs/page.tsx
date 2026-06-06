@@ -33,7 +33,6 @@ export default function SongsPage() {
   const [guestName, setGuestName] = useState<string | null>(null);
   const [depot, setDepot] = useState<string | null>(null);
   const [bootstrapped, setBootstrapped] = useState(false);
-  const [nowPlaying, setNowPlaying] = useState<SongWithGuest | null>(null);
   const [queue, setQueue] = useState<SongWithGuest[]>([]);
   const [played, setPlayed] = useState<SongWithGuest[]>([]);
   const [myVotes, setMyVotes] = useState<Set<string>>(new Set());
@@ -78,7 +77,7 @@ export default function SongsPage() {
       supabase
         .from("songs")
         .select(SONG_COLS)
-        .in("status", ["queued", "cued", "playing"]),
+        .in("status", ["queued", "cued"]),
       supabase
         .from("songs")
         .select(SONG_COLS)
@@ -89,10 +88,7 @@ export default function SongsPage() {
     ]);
     if (activeRes.data) {
       const rows = activeRes.data as unknown as SongWithGuest[];
-      const playing = rows.find((r) => r.status === "playing") ?? null;
-      const queueRows = sortQueue(rows.filter((r) => r.status !== "playing"));
-      setNowPlaying(playing);
-      setQueue(queueRows);
+      setQueue(sortQueue(rows));
     }
     if (playedRes.data) {
       setPlayed(playedRes.data as unknown as SongWithGuest[]);
@@ -243,8 +239,6 @@ export default function SongsPage() {
         nearest the top.
       </WBHint>
 
-      <NowDeparting song={nowPlaying} />
-
       {/* Queue header */}
       <div
         style={{
@@ -260,7 +254,7 @@ export default function SongsPage() {
           <div
             style={{
               fontFamily: "var(--font-sans)",
-              fontSize: 14,
+              fontSize: 16,
               fontWeight: 700,
               marginTop: 2,
             }}
@@ -273,7 +267,7 @@ export default function SongsPage() {
             display: "flex",
             gap: 6,
             fontFamily: "var(--font-mono)",
-            fontSize: 9,
+            fontSize: 11,
             letterSpacing: "0.12em",
           }}
         >
@@ -293,7 +287,7 @@ export default function SongsPage() {
               padding: "30px 24px",
               textAlign: "center",
               fontFamily: "var(--font-mono)",
-              fontSize: 11,
+              fontSize: 13,
               color: "var(--color-faded)",
               letterSpacing: "0.16em",
               textTransform: "uppercase",
@@ -377,7 +371,7 @@ export default function SongsPage() {
             padding: "12px 16px",
             minHeight: 44,
             fontFamily: "var(--font-mono)",
-            fontSize: 11,
+            fontSize: 13,
             fontWeight: 700,
             letterSpacing: "0.12em",
             boxShadow: "2px 2px 0 var(--color-ink)",
@@ -398,49 +392,41 @@ export default function SongsPage() {
           background: "var(--color-card)",
           display: "flex",
           padding: "10px 14px",
-          justifyContent: "space-between",
           alignItems: "center",
+          fontFamily: "var(--font-mono)",
+          fontSize: 15,
+          letterSpacing: "0.12em",
+          textTransform: "uppercase",
         }}
       >
-        <div
-          style={{
-            display: "flex",
-            gap: 18,
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            letterSpacing: "0.12em",
-            textTransform: "uppercase",
-          }}
+        <Link
+          href="/feed"
+          style={{ flex: 1, textAlign: "center", opacity: 0.55, color: "inherit" }}
         >
-          <Link href="/feed" style={{ opacity: 0.55, color: "inherit" }}>
-            Photos
-          </Link>
+          Photos
+        </Link>
+        <span style={{ flex: 1, textAlign: "center", fontWeight: 700 }}>
           <span
             style={{
-              fontWeight: 700,
               borderBottom: "2px solid var(--color-blue-deep)",
               paddingBottom: 2,
             }}
           >
             Songs
           </span>
-          <Link href="/awards" style={{ opacity: 0.55, color: "inherit" }}>
-            Awards
-          </Link>
-          <Link href="/designs" style={{ opacity: 0.55, color: "inherit" }}>
-            Design
-          </Link>
-        </div>
-        <div
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 9,
-            color: "var(--color-faded)",
-            letterSpacing: "0.12em",
-          }}
+        </span>
+        <Link
+          href="/awards"
+          style={{ flex: 1, textAlign: "center", opacity: 0.55, color: "inherit" }}
         >
-          FORM W/SNG
-        </div>
+          Awards
+        </Link>
+        <Link
+          href="/designs"
+          style={{ flex: 1, textAlign: "center", opacity: 0.55, color: "inherit" }}
+        >
+          Design
+        </Link>
       </div>
 
       {toast && (
@@ -460,7 +446,7 @@ export default function SongsPage() {
               background: "var(--color-ink)",
               color: "var(--color-paper)",
               fontFamily: "var(--font-mono)",
-              fontSize: 10,
+              fontSize: 12,
               padding: "6px 12px",
               letterSpacing: "0.14em",
               fontWeight: 700,
@@ -480,7 +466,7 @@ const inputStyle: React.CSSProperties = {
   background: "var(--color-paper)",
   padding: "8px 10px",
   fontFamily: "var(--font-mono)",
-  fontSize: 11,
+  fontSize: 13,
   color: "var(--color-ink)",
   outline: "none",
   letterSpacing: "0.04em",
@@ -519,7 +505,7 @@ function QueueRow({
           width: 26,
           flexShrink: 0,
           fontFamily: "var(--font-mono)",
-          fontSize: 16,
+          fontSize: 19,
           fontWeight: 700,
           color: index === 0 ? "var(--color-blue-deep)" : "var(--color-ink)",
           fontVariantNumeric: "tabular-nums",
@@ -531,7 +517,7 @@ function QueueRow({
         <div
           style={{
             fontFamily: "var(--font-sans)",
-            fontSize: 13,
+            fontSize: 15,
             fontWeight: 600,
             lineHeight: 1.2,
           }}
@@ -543,7 +529,7 @@ function QueueRow({
         <div
           style={{
             fontFamily: "var(--font-mono)",
-            fontSize: 10,
+            fontSize: 12,
             color: "var(--color-faded)",
             marginTop: 1,
           }}
@@ -563,7 +549,7 @@ function QueueRow({
         <div
           style={{
             fontFamily: "var(--font-mono)",
-            fontSize: 13,
+            fontSize: 15,
             fontWeight: 700,
             fontVariantNumeric: "tabular-nums",
             minWidth: 18,
@@ -582,7 +568,7 @@ function QueueRow({
               alignItems: "center",
               justifyContent: "center",
               fontFamily: "var(--font-mono)",
-              fontSize: 12,
+              fontSize: 14,
               color: "var(--color-faded)",
             }}
           >
@@ -603,7 +589,7 @@ function QueueRow({
               alignItems: "center",
               justifyContent: "center",
               fontFamily: "var(--font-mono)",
-              fontSize: 20,
+              fontSize: 24,
               fontWeight: 700,
               background: voted ? "var(--color-blue-deep)" : "transparent",
               color: voted ? "var(--color-paper)" : "var(--color-blue-deep)",
@@ -640,7 +626,7 @@ function DepartedRow({ song }: { song: SongWithGuest }) {
         <div
           style={{
             fontFamily: "var(--font-sans)",
-            fontSize: 12.5,
+            fontSize: 15,
             fontWeight: 600,
             lineHeight: 1.2,
             textDecoration: "line-through",
@@ -650,7 +636,7 @@ function DepartedRow({ song }: { song: SongWithGuest }) {
           <span
             style={{
               fontFamily: "var(--font-mono)",
-              fontSize: 8.5,
+              fontSize: 10,
               padding: "1px 4px",
               marginLeft: 6,
               border: "1.5px solid var(--color-ink)",
@@ -667,7 +653,7 @@ function DepartedRow({ song }: { song: SongWithGuest }) {
         <div
           style={{
             fontFamily: "var(--font-mono)",
-            fontSize: 10,
+            fontSize: 12,
             color: "var(--color-faded)",
             marginTop: 1,
           }}
@@ -679,7 +665,7 @@ function DepartedRow({ song }: { song: SongWithGuest }) {
       <div
         style={{
           fontFamily: "var(--font-mono)",
-          fontSize: 11,
+          fontSize: 13,
           color: "var(--color-faded)",
           fontVariantNumeric: "tabular-nums",
         }}
@@ -695,7 +681,7 @@ function Pill({ children, bg }: { children: React.ReactNode; bg: string }) {
     <span
       style={{
         fontFamily: "var(--font-mono)",
-        fontSize: 8.5,
+        fontSize: 10,
         padding: "1px 4px",
         marginLeft: 6,
         background: bg,
@@ -736,135 +722,6 @@ function SortPill({
     >
       {children}
     </button>
-  );
-}
-
-function NowDeparting({ song }: { song: SongWithGuest | null }) {
-  return (
-    <div
-      style={{
-        background: "var(--color-blue-deep)",
-        color: "var(--color-paper)",
-        padding: "14px 16px",
-      }}
-    >
-      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <div
-          aria-hidden
-          style={{
-            width: 44,
-            height: 44,
-            borderRadius: 2,
-            background: "var(--color-blue)",
-            position: "relative",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.25)",
-            flexShrink: 0,
-          }}
-        >
-          <div
-            style={{
-              position: "absolute",
-              inset: 4,
-              background:
-                "repeating-linear-gradient(135deg, var(--color-blue-deep) 0 3px, transparent 3px 6px)",
-            }}
-          />
-          <div
-            style={{
-              width: 8,
-              height: 8,
-              borderRadius: "50%",
-              background: "var(--color-paper)",
-              zIndex: 1,
-            }}
-          />
-        </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 9,
-              letterSpacing: "0.18em",
-              textTransform: "uppercase",
-              color: "rgba(239,232,212,0.6)",
-              fontWeight: 600,
-            }}
-          >
-            Now playing
-          </div>
-          {song ? (
-            <>
-              <div
-                style={{
-                  fontFamily: "var(--font-sans)",
-                  fontSize: 14,
-                  fontWeight: 700,
-                  marginTop: 2,
-                  lineHeight: 1.2,
-                }}
-              >
-                {song.title}
-              </div>
-              <div
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 10,
-                  opacity: 0.75,
-                  marginTop: 1,
-                }}
-              >
-                {song.artist || "—"} · req. {songGuestName(song)} ·{" "}
-                {songDepot(song)}
-              </div>
-            </>
-          ) : (
-            <div
-              style={{
-                fontFamily: "var(--font-sans)",
-                fontSize: 14,
-                fontWeight: 700,
-                marginTop: 2,
-                lineHeight: 1.2,
-              }}
-            >
-              Nothing playing yet.
-            </div>
-          )}
-        </div>
-        {song && (
-          <div
-            aria-hidden
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
-              fontWeight: 700,
-              letterSpacing: "0.12em",
-            }}
-          >
-            ♪♪
-          </div>
-        )}
-      </div>
-      <div
-        aria-hidden
-        style={{
-          marginTop: 10,
-          height: 2,
-          background: "rgba(255,255,255,0.18)",
-        }}
-      >
-        <div
-          style={{
-            width: song ? "30%" : "0%",
-            height: "100%",
-            background: "var(--color-paper)",
-          }}
-        />
-      </div>
-    </div>
   );
 }
 

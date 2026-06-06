@@ -113,7 +113,7 @@ export default function PhotoModal({ photo, onClose }: Props) {
           padding: "14px 18px",
           color: "var(--color-paper)",
           fontFamily: "var(--font-mono)",
-          fontSize: 11,
+          fontSize: 13,
           letterSpacing: "0.16em",
           flexShrink: 0,
         }}
@@ -135,7 +135,7 @@ export default function PhotoModal({ photo, onClose }: Props) {
             color: "var(--color-paper)",
             padding: "4px 10px",
             fontFamily: "var(--font-mono)",
-            fontSize: 14,
+            fontSize: 16,
             cursor: "pointer",
           }}
         >
@@ -186,7 +186,7 @@ export default function PhotoModal({ photo, onClose }: Props) {
         <div
           style={{
             fontFamily: "var(--font-sans)",
-            fontSize: 15,
+            fontSize: 18,
             fontWeight: 700,
           }}
         >
@@ -194,7 +194,7 @@ export default function PhotoModal({ photo, onClose }: Props) {
           <span
             style={{
               fontFamily: "var(--font-mono)",
-              fontSize: 11,
+              fontSize: 13,
               color: "var(--color-blue-soft)",
               marginLeft: 6,
             }}
@@ -205,7 +205,7 @@ export default function PhotoModal({ photo, onClose }: Props) {
         <div
           style={{
             fontFamily: "var(--font-mono)",
-            fontSize: 10,
+            fontSize: 12,
             color: "rgba(239, 232, 212, 0.6)",
             letterSpacing: "0.1em",
             marginTop: 2,
@@ -217,7 +217,7 @@ export default function PhotoModal({ photo, onClose }: Props) {
           <div
             style={{
               fontFamily: "var(--font-sans)",
-              fontSize: 13,
+              fontSize: 15,
               fontStyle: "italic",
               marginTop: 8,
               opacity: 0.85,
