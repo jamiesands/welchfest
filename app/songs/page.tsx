@@ -33,7 +33,6 @@ export default function SongsPage() {
   const [guestName, setGuestName] = useState<string | null>(null);
   const [depot, setDepot] = useState<string | null>(null);
   const [bootstrapped, setBootstrapped] = useState(false);
-  const [nowPlaying, setNowPlaying] = useState<SongWithGuest | null>(null);
   const [queue, setQueue] = useState<SongWithGuest[]>([]);
   const [played, setPlayed] = useState<SongWithGuest[]>([]);
   const [myVotes, setMyVotes] = useState<Set<string>>(new Set());
@@ -78,7 +77,7 @@ export default function SongsPage() {
       supabase
         .from("songs")
         .select(SONG_COLS)
-        .in("status", ["queued", "cued", "playing"]),
+        .in("status", ["queued", "cued"]),
       supabase
         .from("songs")
         .select(SONG_COLS)
@@ -89,10 +88,7 @@ export default function SongsPage() {
     ]);
     if (activeRes.data) {
       const rows = activeRes.data as unknown as SongWithGuest[];
-      const playing = rows.find((r) => r.status === "playing") ?? null;
-      const queueRows = sortQueue(rows.filter((r) => r.status !== "playing"));
-      setNowPlaying(playing);
-      setQueue(queueRows);
+      setQueue(sortQueue(rows));
     }
     if (playedRes.data) {
       setPlayed(playedRes.data as unknown as SongWithGuest[]);
@@ -242,8 +238,6 @@ export default function SongsPage() {
         up the list, or add your own at the bottom. The DJ plays whatever&rsquo;s
         nearest the top.
       </WBHint>
-
-      <NowDeparting song={nowPlaying} />
 
       {/* Queue header */}
       <div
@@ -728,135 +722,6 @@ function SortPill({
     >
       {children}
     </button>
-  );
-}
-
-function NowDeparting({ song }: { song: SongWithGuest | null }) {
-  return (
-    <div
-      style={{
-        background: "var(--color-blue-deep)",
-        color: "var(--color-paper)",
-        padding: "14px 16px",
-      }}
-    >
-      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <div
-          aria-hidden
-          style={{
-            width: 44,
-            height: 44,
-            borderRadius: 2,
-            background: "var(--color-blue)",
-            position: "relative",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.25)",
-            flexShrink: 0,
-          }}
-        >
-          <div
-            style={{
-              position: "absolute",
-              inset: 4,
-              background:
-                "repeating-linear-gradient(135deg, var(--color-blue-deep) 0 3px, transparent 3px 6px)",
-            }}
-          />
-          <div
-            style={{
-              width: 8,
-              height: 8,
-              borderRadius: "50%",
-              background: "var(--color-paper)",
-              zIndex: 1,
-            }}
-          />
-        </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 9,
-              letterSpacing: "0.18em",
-              textTransform: "uppercase",
-              color: "rgba(239,232,212,0.6)",
-              fontWeight: 600,
-            }}
-          >
-            Now playing
-          </div>
-          {song ? (
-            <>
-              <div
-                style={{
-                  fontFamily: "var(--font-sans)",
-                  fontSize: 14,
-                  fontWeight: 700,
-                  marginTop: 2,
-                  lineHeight: 1.2,
-                }}
-              >
-                {song.title}
-              </div>
-              <div
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 10,
-                  opacity: 0.75,
-                  marginTop: 1,
-                }}
-              >
-                {song.artist || "—"} · req. {songGuestName(song)} ·{" "}
-                {songDepot(song)}
-              </div>
-            </>
-          ) : (
-            <div
-              style={{
-                fontFamily: "var(--font-sans)",
-                fontSize: 14,
-                fontWeight: 700,
-                marginTop: 2,
-                lineHeight: 1.2,
-              }}
-            >
-              Nothing playing yet.
-            </div>
-          )}
-        </div>
-        {song && (
-          <div
-            aria-hidden
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
-              fontWeight: 700,
-              letterSpacing: "0.12em",
-            }}
-          >
-            ♪♪
-          </div>
-        )}
-      </div>
-      <div
-        aria-hidden
-        style={{
-          marginTop: 10,
-          height: 2,
-          background: "rgba(255,255,255,0.18)",
-        }}
-      >
-        <div
-          style={{
-            width: song ? "30%" : "0%",
-            height: "100%",
-            background: "var(--color-paper)",
-          }}
-        />
-      </div>
-    </div>
   );
 }
 
