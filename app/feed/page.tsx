@@ -303,7 +303,7 @@ export default function FeedPage() {
         })}
       </div>
 
-      <div style={{ flex: 1, minHeight: 0, paddingBottom: 64 }}>
+      <div style={{ flex: 1, minHeight: 0, paddingBottom: 120 }}>
         {rows.length === 0 && bootstrapped ? (
           <div
             style={{
@@ -355,62 +355,77 @@ export default function FeedPage() {
         style={{
           borderTop: "1.5px solid var(--color-ink)",
           background: "var(--color-card)",
-          display: "flex",
-          padding: "10px 14px",
-          justifyContent: "space-between",
-          alignItems: "center",
         }}
       >
         <div
           style={{
+            padding: "10px 14px",
+            borderBottom: "1.5px solid var(--color-ink)",
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => setUploadOpen(true)}
+            disabled={!bootstrapped}
+            style={{
+              width: "100%",
+              background: "var(--color-blue-deep)",
+              color: "var(--color-paper)",
+              padding: "12px 16px",
+              minHeight: 44,
+              fontFamily: "var(--font-mono)",
+              fontSize: 11,
+              fontWeight: 700,
+              letterSpacing: "0.12em",
+              boxShadow: "2px 2px 0 var(--color-ink)",
+              border: 0,
+              cursor: bootstrapped ? "pointer" : "not-allowed",
+              opacity: bootstrapped ? 1 : 0.5,
+            }}
+          >
+            + ADD PHOTO
+          </button>
+        </div>
+        <div
+          style={{
             display: "flex",
-            gap: 18,
+            padding: "10px 14px",
+            alignItems: "center",
             fontFamily: "var(--font-mono)",
-            fontSize: 10,
+            fontSize: 13,
             letterSpacing: "0.12em",
             textTransform: "uppercase",
           }}
         >
-          <span
-            style={{
-              fontWeight: 700,
-              borderBottom: "2px solid var(--color-blue-deep)",
-              paddingBottom: 2,
-            }}
-          >
-            Photos
+          <span style={{ flex: 1, textAlign: "center", fontWeight: 700 }}>
+            <span
+              style={{
+                borderBottom: "2px solid var(--color-blue-deep)",
+                paddingBottom: 2,
+              }}
+            >
+              Photos
+            </span>
           </span>
-          <Link href="/songs" style={{ opacity: 0.55, color: "inherit" }}>
+          <Link
+            href="/songs"
+            style={{ flex: 1, textAlign: "center", opacity: 0.55, color: "inherit" }}
+          >
             Songs
           </Link>
-          <Link href="/awards" style={{ opacity: 0.55, color: "inherit" }}>
+          <Link
+            href="/awards"
+            style={{ flex: 1, textAlign: "center", opacity: 0.55, color: "inherit" }}
+          >
             Awards
           </Link>
-          <Link href="/designs" style={{ opacity: 0.55, color: "inherit" }}>
+          <Link
+            href="/designs"
+            style={{ flex: 1, textAlign: "center", opacity: 0.55, color: "inherit" }}
+          >
             Design
           </Link>
         </div>
-        <button
-          type="button"
-          onClick={() => setUploadOpen(true)}
-          disabled={!bootstrapped}
-          style={{
-            background: "var(--color-blue-deep)",
-            color: "var(--color-paper)",
-            padding: "11px 14px",
-            minHeight: 44,
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            fontWeight: 700,
-            letterSpacing: "0.1em",
-            boxShadow: "2px 2px 0 var(--color-ink)",
-            border: 0,
-            cursor: bootstrapped ? "pointer" : "not-allowed",
-            opacity: bootstrapped ? 1 : 0.5,
-          }}
-        >
-          + ADD PHOTO
-        </button>
       </div>
 
       {open && <PhotoModal photo={open} onClose={() => setOpen(null)} />}

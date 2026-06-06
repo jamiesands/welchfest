@@ -258,49 +258,41 @@ export default function AwardsPage() {
           background: "var(--color-card)",
           display: "flex",
           padding: "10px 14px",
-          justifyContent: "space-between",
           alignItems: "center",
+          fontFamily: "var(--font-mono)",
+          fontSize: 13,
+          letterSpacing: "0.12em",
+          textTransform: "uppercase",
         }}
       >
-        <div
-          style={{
-            display: "flex",
-            gap: 18,
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            letterSpacing: "0.12em",
-            textTransform: "uppercase",
-          }}
+        <Link
+          href="/feed"
+          style={{ flex: 1, textAlign: "center", opacity: 0.55, color: "inherit" }}
         >
-          <Link href="/feed" style={{ opacity: 0.55, color: "inherit" }}>
-            Photos
-          </Link>
-          <Link href="/songs" style={{ opacity: 0.55, color: "inherit" }}>
-            Songs
-          </Link>
+          Photos
+        </Link>
+        <Link
+          href="/songs"
+          style={{ flex: 1, textAlign: "center", opacity: 0.55, color: "inherit" }}
+        >
+          Songs
+        </Link>
+        <span style={{ flex: 1, textAlign: "center", fontWeight: 700 }}>
           <span
             style={{
-              fontWeight: 700,
               borderBottom: "2px solid var(--color-blue-deep)",
               paddingBottom: 2,
             }}
           >
             Awards
           </span>
-          <Link href="/designs" style={{ opacity: 0.55, color: "inherit" }}>
-            Design
-          </Link>
-        </div>
-        <div
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 9,
-            color: "var(--color-faded)",
-            letterSpacing: "0.12em",
-          }}
+        </span>
+        <Link
+          href="/designs"
+          style={{ flex: 1, textAlign: "center", opacity: 0.55, color: "inherit" }}
         >
-          FORM W/AWD
-        </div>
+          Design
+        </Link>
       </div>
     </main>
   );
