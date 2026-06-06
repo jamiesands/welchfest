@@ -74,7 +74,7 @@ export default function JoinPage() {
             <div
               style={{
                 fontFamily: "var(--font-sans)",
-                fontSize: 25,
+                fontSize: 30,
                 fontWeight: 700,
                 lineHeight: 1.04,
                 letterSpacing: "-0.02em",
@@ -87,7 +87,7 @@ export default function JoinPage() {
             <div
               style={{
                 fontFamily: "var(--font-mono)",
-                fontSize: 10,
+                fontSize: 12,
                 marginTop: 6,
                 color: "var(--color-faded)",
                 letterSpacing: "0.06em",
@@ -133,7 +133,7 @@ export default function JoinPage() {
             className="w-full bg-transparent outline-none placeholder:text-faded/60"
             style={{
               fontFamily: "var(--font-sans)",
-              fontSize: 18,
+              fontSize: 21,
               fontWeight: 500,
               color: "var(--color-ink)",
             }}
@@ -186,7 +186,7 @@ export default function JoinPage() {
                 <div
                   style={{
                     fontFamily: "var(--font-mono)",
-                    fontSize: 9,
+                    fontSize: 11,
                     opacity: 0.7,
                     letterSpacing: "0.1em",
                   }}
@@ -196,7 +196,7 @@ export default function JoinPage() {
                 <div
                   style={{
                     fontFamily: "var(--font-mono)",
-                    fontSize: 13,
+                    fontSize: 15,
                     fontWeight: 700,
                     letterSpacing: "0.08em",
                     marginTop: 2,
@@ -208,7 +208,7 @@ export default function JoinPage() {
                 <div
                   style={{
                     fontFamily: "var(--font-sans)",
-                    fontSize: 11,
+                    fontSize: 13,
                     marginTop: 4,
                   }}
                 >
@@ -222,7 +222,7 @@ export default function JoinPage() {
                       top: 4,
                       right: 4,
                       fontFamily: "var(--font-mono)",
-                      fontSize: 10,
+                      fontSize: 12,
                       color: "var(--color-blue)",
                     }}
                   >
@@ -263,7 +263,7 @@ export default function JoinPage() {
                   position: "absolute",
                   left: 3,
                   top: -1,
-                  fontSize: 22,
+                  fontSize: 26,
                   fontFamily: "var(--font-mono)",
                   color: "var(--color-blue)",
                   lineHeight: 1,
@@ -286,7 +286,7 @@ export default function JoinPage() {
               }}
             />
           </span>
-          <span style={{ fontSize: 11, lineHeight: 1.4 }}>
+          <span style={{ fontSize: 13, lineHeight: 1.4 }}>
             I&rsquo;m happy for my photos to appear on the party wall. Anything
             unwanted can be{" "}
             <span style={{ color: "var(--color-blue)", fontWeight: 600 }}>
@@ -303,7 +303,7 @@ export default function JoinPage() {
               style={{
                 marginBottom: 10,
                 fontFamily: "var(--font-mono)",
-                fontSize: 10,
+                fontSize: 12,
                 letterSpacing: "0.14em",
                 textTransform: "uppercase",
                 color: "var(--color-stamp)",
@@ -328,7 +328,7 @@ export default function JoinPage() {
               alignItems: "center",
               fontFamily: "var(--font-mono)",
               letterSpacing: "0.18em",
-              fontSize: 12,
+              fontSize: 14,
               fontWeight: 600,
               width: "100%",
               border: "none",
@@ -345,7 +345,7 @@ export default function JoinPage() {
               justifyContent: "space-between",
               marginTop: 6,
               fontFamily: "var(--font-mono)",
-              fontSize: 9,
+              fontSize: 11,
               color: "var(--color-faded)",
               letterSpacing: "0.1em",
             }}

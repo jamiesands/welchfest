@@ -254,7 +254,7 @@ export default function SongsPage() {
           <div
             style={{
               fontFamily: "var(--font-sans)",
-              fontSize: 14,
+              fontSize: 16,
               fontWeight: 700,
               marginTop: 2,
             }}
@@ -267,7 +267,7 @@ export default function SongsPage() {
             display: "flex",
             gap: 6,
             fontFamily: "var(--font-mono)",
-            fontSize: 9,
+            fontSize: 11,
             letterSpacing: "0.12em",
           }}
         >
@@ -287,7 +287,7 @@ export default function SongsPage() {
               padding: "30px 24px",
               textAlign: "center",
               fontFamily: "var(--font-mono)",
-              fontSize: 11,
+              fontSize: 13,
               color: "var(--color-faded)",
               letterSpacing: "0.16em",
               textTransform: "uppercase",
@@ -371,7 +371,7 @@ export default function SongsPage() {
             padding: "12px 16px",
             minHeight: 44,
             fontFamily: "var(--font-mono)",
-            fontSize: 11,
+            fontSize: 13,
             fontWeight: 700,
             letterSpacing: "0.12em",
             boxShadow: "2px 2px 0 var(--color-ink)",
@@ -394,7 +394,7 @@ export default function SongsPage() {
           padding: "10px 14px",
           alignItems: "center",
           fontFamily: "var(--font-mono)",
-          fontSize: 13,
+          fontSize: 15,
           letterSpacing: "0.12em",
           textTransform: "uppercase",
         }}
@@ -446,7 +446,7 @@ export default function SongsPage() {
               background: "var(--color-ink)",
               color: "var(--color-paper)",
               fontFamily: "var(--font-mono)",
-              fontSize: 10,
+              fontSize: 12,
               padding: "6px 12px",
               letterSpacing: "0.14em",
               fontWeight: 700,
@@ -466,7 +466,7 @@ const inputStyle: React.CSSProperties = {
   background: "var(--color-paper)",
   padding: "8px 10px",
   fontFamily: "var(--font-mono)",
-  fontSize: 11,
+  fontSize: 13,
   color: "var(--color-ink)",
   outline: "none",
   letterSpacing: "0.04em",
@@ -505,7 +505,7 @@ function QueueRow({
           width: 26,
           flexShrink: 0,
           fontFamily: "var(--font-mono)",
-          fontSize: 16,
+          fontSize: 19,
           fontWeight: 700,
           color: index === 0 ? "var(--color-blue-deep)" : "var(--color-ink)",
           fontVariantNumeric: "tabular-nums",
@@ -517,7 +517,7 @@ function QueueRow({
         <div
           style={{
             fontFamily: "var(--font-sans)",
-            fontSize: 13,
+            fontSize: 15,
             fontWeight: 600,
             lineHeight: 1.2,
           }}
@@ -529,7 +529,7 @@ function QueueRow({
         <div
           style={{
             fontFamily: "var(--font-mono)",
-            fontSize: 10,
+            fontSize: 12,
             color: "var(--color-faded)",
             marginTop: 1,
           }}
@@ -549,7 +549,7 @@ function QueueRow({
         <div
           style={{
             fontFamily: "var(--font-mono)",
-            fontSize: 13,
+            fontSize: 15,
             fontWeight: 700,
             fontVariantNumeric: "tabular-nums",
             minWidth: 18,
@@ -568,7 +568,7 @@ function QueueRow({
               alignItems: "center",
               justifyContent: "center",
               fontFamily: "var(--font-mono)",
-              fontSize: 12,
+              fontSize: 14,
               color: "var(--color-faded)",
             }}
           >
@@ -589,7 +589,7 @@ function QueueRow({
               alignItems: "center",
               justifyContent: "center",
               fontFamily: "var(--font-mono)",
-              fontSize: 20,
+              fontSize: 24,
               fontWeight: 700,
               background: voted ? "var(--color-blue-deep)" : "transparent",
               color: voted ? "var(--color-paper)" : "var(--color-blue-deep)",
@@ -626,7 +626,7 @@ function DepartedRow({ song }: { song: SongWithGuest }) {
         <div
           style={{
             fontFamily: "var(--font-sans)",
-            fontSize: 12.5,
+            fontSize: 15,
             fontWeight: 600,
             lineHeight: 1.2,
             textDecoration: "line-through",
@@ -636,7 +636,7 @@ function DepartedRow({ song }: { song: SongWithGuest }) {
           <span
             style={{
               fontFamily: "var(--font-mono)",
-              fontSize: 8.5,
+              fontSize: 10,
               padding: "1px 4px",
               marginLeft: 6,
               border: "1.5px solid var(--color-ink)",
@@ -653,7 +653,7 @@ function DepartedRow({ song }: { song: SongWithGuest }) {
         <div
           style={{
             fontFamily: "var(--font-mono)",
-            fontSize: 10,
+            fontSize: 12,
             color: "var(--color-faded)",
             marginTop: 1,
           }}
@@ -665,7 +665,7 @@ function DepartedRow({ song }: { song: SongWithGuest }) {
       <div
         style={{
           fontFamily: "var(--font-mono)",
-          fontSize: 11,
+          fontSize: 13,
           color: "var(--color-faded)",
           fontVariantNumeric: "tabular-nums",
         }}
@@ -681,7 +681,7 @@ function Pill({ children, bg }: { children: React.ReactNode; bg: string }) {
     <span
       style={{
         fontFamily: "var(--font-mono)",
-        fontSize: 8.5,
+        fontSize: 10,
         padding: "1px 4px",
         marginLeft: 6,
         background: bg,

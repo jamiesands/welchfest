@@ -225,7 +225,7 @@ export default function FeedPage() {
             style={{
               fontFamily: "var(--font-sans)",
               fontWeight: 700,
-              fontSize: 18,
+              fontSize: 21,
               lineHeight: 1,
               marginTop: 2,
             }}
@@ -238,7 +238,7 @@ export default function FeedPage() {
           <div
             style={{
               fontFamily: "var(--font-mono)",
-              fontSize: 22,
+              fontSize: 26,
               fontWeight: 700,
               lineHeight: 1,
               marginTop: 2,
@@ -262,7 +262,7 @@ export default function FeedPage() {
           display: "flex",
           borderBottom: "1.5px solid var(--color-ink)",
           fontFamily: "var(--font-mono)",
-          fontSize: 10,
+          fontSize: 12,
           letterSpacing: "0.12em",
           textTransform: "uppercase",
           flexShrink: 0,
@@ -310,7 +310,7 @@ export default function FeedPage() {
               padding: "40px 24px",
               textAlign: "center",
               fontFamily: "var(--font-mono)",
-              fontSize: 11,
+              fontSize: 13,
               color: "var(--color-faded)",
               letterSpacing: "0.16em",
               textTransform: "uppercase",
@@ -320,7 +320,7 @@ export default function FeedPage() {
             {tab === "mine"
               ? "You haven't added any photos yet."
               : tab === "360"
-                ? <>360° photos appear here.<br /><span style={{ fontSize: 9, opacity: 0.7 }}>Taken on the special camera — coming through the night.</span></>
+                ? <>360° photos appear here.<br /><span style={{ fontSize: 11, opacity: 0.7 }}>Taken on the special camera — coming through the night.</span></>
                 : "No photos yet. Add the first one."}
           </div>
         ) : (
@@ -340,7 +340,7 @@ export default function FeedPage() {
               padding: "16px",
               textAlign: "center",
               fontFamily: "var(--font-mono)",
-              fontSize: 10,
+              fontSize: 12,
               color: "var(--color-faded)",
               letterSpacing: "0.16em",
             }}
@@ -374,7 +374,7 @@ export default function FeedPage() {
               padding: "12px 16px",
               minHeight: 44,
               fontFamily: "var(--font-mono)",
-              fontSize: 11,
+              fontSize: 13,
               fontWeight: 700,
               letterSpacing: "0.12em",
               boxShadow: "2px 2px 0 var(--color-ink)",
@@ -392,7 +392,7 @@ export default function FeedPage() {
             padding: "10px 14px",
             alignItems: "center",
             fontFamily: "var(--font-mono)",
-            fontSize: 13,
+            fontSize: 15,
             letterSpacing: "0.12em",
             textTransform: "uppercase",
           }}

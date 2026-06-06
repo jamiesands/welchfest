@@ -201,7 +201,7 @@ export default function AwardsPage() {
               padding: "40px 24px",
               textAlign: "center",
               fontFamily: "var(--font-mono)",
-              fontSize: 11,
+              fontSize: 13,
               color: "var(--color-faded)",
               letterSpacing: "0.16em",
               textTransform: "uppercase",
@@ -210,7 +210,7 @@ export default function AwardsPage() {
           >
             No trucks added yet.
             <br />
-            <span style={{ fontSize: 9, opacity: 0.7 }}>
+            <span style={{ fontSize: 11, opacity: 0.7 }}>
               Trucks appear here before judging.
             </span>
           </div>
@@ -238,7 +238,7 @@ export default function AwardsPage() {
             background: "var(--color-stamp)",
             color: "var(--color-paper)",
             fontFamily: "var(--font-mono)",
-            fontSize: 10,
+            fontSize: 12,
             letterSpacing: "0.14em",
             textTransform: "uppercase",
             padding: "8px 12px",
@@ -260,7 +260,7 @@ export default function AwardsPage() {
           padding: "10px 14px",
           alignItems: "center",
           fontFamily: "var(--font-mono)",
-          fontSize: 13,
+          fontSize: 15,
           letterSpacing: "0.12em",
           textTransform: "uppercase",
         }}
@@ -327,7 +327,7 @@ function BandSection({
         <span
           style={{
             fontFamily: "var(--font-mono)",
-            fontSize: 10,
+            fontSize: 12,
             color: hasVoted ? "var(--color-stamp)" : "var(--color-faded)",
             letterSpacing: "0.14em",
             fontWeight: 700,
@@ -342,7 +342,7 @@ function BandSection({
           style={{
             padding: "18px 16px 22px",
             fontFamily: "var(--font-mono)",
-            fontSize: 11,
+            fontSize: 13,
             color: "var(--color-faded)",
             letterSpacing: "0.14em",
             textTransform: "uppercase",
@@ -426,7 +426,7 @@ function TruckRow({
               alignItems: "center",
               justifyContent: "center",
               fontFamily: "var(--font-mono)",
-              fontSize: 10,
+              fontSize: 12,
               color: "var(--color-faded)",
               letterSpacing: "0.14em",
             }}
@@ -440,7 +440,7 @@ function TruckRow({
         <div
           style={{
             fontFamily: "var(--font-sans)",
-            fontSize: 14,
+            fontSize: 16,
             fontWeight: 700,
             lineHeight: 1.2,
           }}
@@ -450,7 +450,7 @@ function TruckRow({
         <div
           style={{
             fontFamily: "var(--font-mono)",
-            fontSize: 10,
+            fontSize: 12,
             color: "var(--color-faded)",
             marginTop: 1,
           }}
@@ -462,7 +462,7 @@ function TruckRow({
         <div
           style={{
             fontFamily: "var(--font-mono)",
-            fontSize: 11,
+            fontSize: 13,
             fontWeight: 700,
             marginTop: 2,
             fontVariantNumeric: "tabular-nums",
@@ -480,7 +480,7 @@ function TruckRow({
             aria-hidden
             style={{
               fontFamily: "var(--font-mono)",
-              fontSize: 9,
+              fontSize: 11,
               color: "var(--color-faded)",
               letterSpacing: "0.14em",
             }}
@@ -500,7 +500,7 @@ function TruckRow({
               padding: "12px 18px",
               minHeight: 44,
               fontFamily: "var(--font-mono)",
-              fontSize: 12,
+              fontSize: 14,
               fontWeight: 700,
               letterSpacing: "0.18em",
               cursor: submitting ? "wait" : "pointer",

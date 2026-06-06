@@ -30,7 +30,7 @@ export default function WBHint({ children }: Props) {
           border: "1.5px solid var(--color-blue-deep)",
           color: "var(--color-blue-deep)",
           fontFamily: "var(--font-mono)",
-          fontSize: 11,
+          fontSize: 13,
           fontWeight: 700,
           lineHeight: "14px",
           textAlign: "center",
@@ -42,7 +42,7 @@ export default function WBHint({ children }: Props) {
         style={{
           margin: 0,
           fontFamily: "var(--font-sans)",
-          fontSize: 12.5,
+          fontSize: 15,
           lineHeight: 1.35,
           color: "var(--color-ink)",
         }}
