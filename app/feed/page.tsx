@@ -12,10 +12,13 @@ import { useRouter } from "next/navigation";
 import WelchMark from "@/components/waybill/WelchMark";
 import WBLabel from "@/components/waybill/WBLabel";
 import WBHint from "@/components/waybill/WBHint";
+import WBListStatus from "@/components/waybill/WBListStatus";
 import EntryRow from "@/components/feed/EntryRow";
 import PhotoModal from "@/components/feed/PhotoModal";
 import UploadSheet from "@/components/feed/UploadSheet";
 import { supabase } from "@/lib/supabase";
+import { withTimeout } from "@/lib/net";
+import { useRefetchOnResume } from "@/lib/useRefetchOnResume";
 import type { PhotoWithGuest } from "@/lib/photos";
 
 type Tab = "photo" | "360" | "mine";
@@ -50,7 +53,11 @@ export default function FeedPage() {
   const [guestName, setGuestName] = useState<string | null>(null);
   const [depot, setDepot] = useState<string | null>(null);
   const [bootstrapped, setBootstrapped] = useState(false);
+  const [bootError, setBootError] = useState(false);
   const [tab, setTab] = useState<Tab>("photo");
+  const [loadState, setLoadState] = useState<"loading" | "error" | "ready">(
+    "loading"
+  );
   const [rows, setRows] = useState<PhotoWithGuest[]>([]);
   const [unitCount, setUnitCount] = useState<number | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -61,20 +68,22 @@ export default function FeedPage() {
   const oldestRef = useRef<string | null>(null);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => {
+  // Guest bootstrap. maybeSingle() so a network failure is distinguishable
+  // from an unknown guest — only the latter bounces to /join; a dead-signal
+  // moment shows a retry instead of dumping a valid guest on the join form
+  // (HARDENING-AUDIT.md C4).
+  const bootstrap = useCallback(async () => {
     const id = localStorage.getItem("welchfest:guest_id");
     if (!id) {
       router.replace("/join");
       return;
     }
-    let cancelled = false;
-    (async () => {
-      const { data } = await supabase
-        .from("guests")
-        .select("name, depot")
-        .eq("id", id)
-        .single();
-      if (cancelled) return;
+    setBootError(false);
+    try {
+      const { data, error } = await withTimeout(
+        supabase.from("guests").select("name, depot").eq("id", id).maybeSingle()
+      );
+      if (error) throw error;
       if (!data) {
         router.replace("/join");
         return;
@@ -83,32 +92,51 @@ export default function FeedPage() {
       setGuestName(data.name);
       setDepot(data.depot);
       setBootstrapped(true);
-    })();
-    return () => {
-      cancelled = true;
-    };
+    } catch {
+      setBootError(true);
+    }
   }, [router]);
 
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    bootstrap();
+  }, [bootstrap]);
+
   const refreshCount = useCallback(async () => {
-    const { count } = await supabase
-      .from("photos")
-      .select("id", { count: "exact", head: true })
-      .neq("status", "hidden")
-      .eq("type", "photo");
-    if (typeof count === "number") setUnitCount(count);
+    try {
+      const { count } = await withTimeout(
+        supabase
+          .from("photos")
+          .select("id", { count: "exact", head: true })
+          .neq("status", "hidden")
+          .eq("type", "photo")
+      );
+      if (typeof count === "number") setUnitCount(count);
+    } catch {
+      // Header count is cosmetic — keep whatever we last had.
+    }
   }, []);
 
   const loadInitial = useCallback(async () => {
     if (!bootstrapped) return;
-    const { data, error } = await buildQuery(tab, guestId)
-      .order("created_at", { ascending: false })
-      .limit(PAGE_SIZE);
-    if (error || !data) return;
-    const list = data as unknown as PhotoWithGuest[];
-    setRows(list);
-    oldestRef.current = list[list.length - 1]?.created_at ?? null;
-    setHasMore(list.length === PAGE_SIZE);
-    setFreshIds(new Set());
+    try {
+      const { data, error } = await withTimeout(
+        buildQuery(tab, guestId)
+          .order("created_at", { ascending: false })
+          .limit(PAGE_SIZE)
+      );
+      if (error || !data) throw error ?? new Error("load failed");
+      const list = data as unknown as PhotoWithGuest[];
+      setRows(list);
+      oldestRef.current = list[list.length - 1]?.created_at ?? null;
+      setHasMore(list.length === PAGE_SIZE);
+      setFreshIds(new Set());
+      setLoadState("ready");
+    } catch {
+      // Keep stale rows if we have them; only surface the error state when
+      // there's nothing to show (HARDENING-AUDIT.md I1).
+      setLoadState((s) => (s === "ready" ? s : "error"));
+    }
   }, [bootstrapped, tab, guestId]);
 
   useEffect(() => {
@@ -168,18 +196,24 @@ export default function FeedPage() {
   const loadMore = useCallback(async () => {
     if (loadingMore || !hasMore || !oldestRef.current) return;
     setLoadingMore(true);
-    const { data } = await buildQuery(tab, guestId)
-      .lt("created_at", oldestRef.current)
-      .order("created_at", { ascending: false })
-      .limit(PAGE_SIZE);
-    if (data) {
-      const more = data as unknown as PhotoWithGuest[];
-      if (more.length === 0) setHasMore(false);
-      else {
-        setRows((prev) => [...prev, ...more]);
-        oldestRef.current = more[more.length - 1].created_at;
-        if (more.length < PAGE_SIZE) setHasMore(false);
+    try {
+      const { data } = await withTimeout(
+        buildQuery(tab, guestId)
+          .lt("created_at", oldestRef.current)
+          .order("created_at", { ascending: false })
+          .limit(PAGE_SIZE)
+      );
+      if (data) {
+        const more = data as unknown as PhotoWithGuest[];
+        if (more.length === 0) setHasMore(false);
+        else {
+          setRows((prev) => [...prev, ...more]);
+          oldestRef.current = more[more.length - 1].created_at;
+          if (more.length < PAGE_SIZE) setHasMore(false);
+        }
       }
+    } catch {
+      // Sentinel stays mounted, so scrolling retries naturally.
     }
     setLoadingMore(false);
   }, [loadingMore, hasMore, tab, guestId]);
@@ -196,6 +230,18 @@ export default function FeedPage() {
     io.observe(sentinel);
     return () => io.disconnect();
   }, [loadMore]);
+
+  // Catch up after the phone was locked / app backgrounded (C6); also
+  // retries a failed bootstrap when connectivity returns.
+  const onResume = useCallback(() => {
+    if (!bootstrapped) {
+      bootstrap();
+      return;
+    }
+    loadInitial();
+    refreshCount();
+  }, [bootstrapped, bootstrap, loadInitial, refreshCount]);
+  useRefetchOnResume(onResume);
 
   const displayCount = useMemo(
     () =>
@@ -304,25 +350,26 @@ export default function FeedPage() {
       </div>
 
       <div style={{ flex: 1, minHeight: 0, paddingBottom: 120 }}>
-        {rows.length === 0 && bootstrapped ? (
-          <div
-            style={{
-              padding: "40px 24px",
-              textAlign: "center",
-              fontFamily: "var(--font-mono)",
-              fontSize: 13,
-              color: "var(--color-faded)",
-              letterSpacing: "0.16em",
-              textTransform: "uppercase",
-              lineHeight: 1.6,
-            }}
-          >
-            {tab === "mine"
-              ? "You haven't added any photos yet."
-              : tab === "360"
-                ? <>360° photos appear here.<br /><span style={{ fontSize: 11, opacity: 0.7 }}>Taken on the special camera — coming through the night.</span></>
-                : "No photos yet. Add the first one."}
-          </div>
+        {bootError && !bootstrapped ? (
+          <WBListStatus state="error" empty={null} onRetry={bootstrap} />
+        ) : rows.length === 0 ? (
+          <WBListStatus
+            state={
+              !bootstrapped || loadState === "loading"
+                ? "loading"
+                : loadState === "error"
+                  ? "error"
+                  : "empty"
+            }
+            onRetry={loadInitial}
+            empty={
+              tab === "mine"
+                ? "You haven't added any photos yet."
+                : tab === "360"
+                  ? <>360° photos appear here.<br /><span style={{ fontSize: 11, opacity: 0.7 }}>Taken on the special camera — coming through the night.</span></>
+                  : "No photos yet. Add the first one."
+            }
+          />
         ) : (
           rows.map((p) => (
             <EntryRow
