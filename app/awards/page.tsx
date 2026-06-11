@@ -12,7 +12,10 @@ import WBLetterhead from "@/components/waybill/WBLetterhead";
 import WBLabel from "@/components/waybill/WBLabel";
 import WBStamp from "@/components/waybill/WBStamp";
 import WBHint from "@/components/waybill/WBHint";
+import WBListStatus from "@/components/waybill/WBListStatus";
 import { supabase } from "@/lib/supabase";
+import { withTimeout } from "@/lib/net";
+import { useRefetchOnResume } from "@/lib/useRefetchOnResume";
 import {
   BAND_LABEL,
   BAND_ORDER,
@@ -25,6 +28,10 @@ export default function AwardsPage() {
   const router = useRouter();
   const [guestId, setGuestId] = useState<string | null>(null);
   const [bootstrapped, setBootstrapped] = useState(false);
+  const [bootError, setBootError] = useState(false);
+  const [loadState, setLoadState] = useState<"loading" | "error" | "ready">(
+    "loading"
+  );
   const [trucks, setTrucks] = useState<Truck[]>([]);
   const [myVotes, setMyVotes] = useState<Record<Band, string | undefined>>({
     new: undefined,
@@ -34,56 +41,70 @@ export default function AwardsPage() {
   const [submitting, setSubmitting] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  // Guest bootstrap. maybeSingle() so a network failure is distinguishable
+  // from an unknown guest — only the latter bounces to /join (C4).
+  const bootstrap = useCallback(async () => {
     const id = localStorage.getItem("welchfest:guest_id");
     if (!id) {
       router.replace("/join");
       return;
     }
-    let cancelled = false;
-    (async () => {
-      const { data } = await supabase
-        .from("guests")
-        .select("id")
-        .eq("id", id)
-        .single();
-      if (cancelled) return;
+    setBootError(false);
+    try {
+      const { data, error } = await withTimeout(
+        supabase.from("guests").select("id").eq("id", id).maybeSingle()
+      );
+      if (error) throw error;
       if (!data) {
         router.replace("/join");
         return;
       }
       setGuestId(id);
       setBootstrapped(true);
-    })();
-    return () => {
-      cancelled = true;
-    };
+    } catch {
+      setBootError(true);
+    }
   }, [router]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    bootstrap();
+  }, [bootstrap]);
 
   const fetchAll = useCallback(async () => {
     if (!guestId) return;
-    const [trucksRes, votesRes] = await Promise.all([
-      supabase
-        .from("trucks")
-        .select(TRUCK_COLS)
-        .order("vote_count", { ascending: false })
-        .order("display_name", { ascending: true }),
-      supabase
-        .from("truck_votes")
-        .select("band, truck_id")
-        .eq("guest_id", guestId),
-    ]);
-    if (trucksRes.data) setTrucks(trucksRes.data as unknown as Truck[]);
-    if (votesRes.data) {
-      const map: Record<Band, string | undefined> = {
-        new: undefined,
-        mid: undefined,
-        veteran: undefined,
-      };
-      for (const v of votesRes.data as { band: Band; truck_id: string }[]) {
-        map[v.band] = v.truck_id;
+    try {
+      const [trucksRes, votesRes] = await withTimeout(
+        Promise.all([
+          supabase
+            .from("trucks")
+            .select(TRUCK_COLS)
+            .order("vote_count", { ascending: false })
+            .order("display_name", { ascending: true }),
+          supabase
+            .from("truck_votes")
+            .select("band, truck_id")
+            .eq("guest_id", guestId),
+        ])
+      );
+      if (trucksRes.error) throw trucksRes.error;
+      setTrucks((trucksRes.data ?? []) as unknown as Truck[]);
+      if (votesRes.data) {
+        const map: Record<Band, string | undefined> = {
+          new: undefined,
+          mid: undefined,
+          veteran: undefined,
+        };
+        for (const v of votesRes.data as { band: Band; truck_id: string }[]) {
+          map[v.band] = v.truck_id;
+        }
+        setMyVotes(map);
       }
-      setMyVotes(map);
+      setLoadState("ready");
+    } catch {
+      // Keep stale rows if we have them; a failed fetch must not render
+      // as "No trucks added yet" (I1).
+      setLoadState((s) => (s === "ready" ? s : "error"));
     }
   }, [guestId]);
 
@@ -145,6 +166,17 @@ export default function AwardsPage() {
     };
   }, [bootstrapped, guestId, fetchAll]);
 
+  // Catch up after the phone was locked / app backgrounded (C6); also
+  // retries a failed bootstrap when connectivity returns.
+  const onResume = useCallback(() => {
+    if (!bootstrapped) {
+      bootstrap();
+      return;
+    }
+    fetchAll();
+  }, [bootstrapped, bootstrap, fetchAll]);
+  useRefetchOnResume(onResume);
+
   const byBand = useMemo(() => {
     const map: Record<Band, Truck[]> = { new: [], mid: [], veteran: [] };
     for (const t of trucks) map[t.band].push(t);
@@ -168,9 +200,19 @@ export default function AwardsPage() {
       )
     );
 
-    const { error: insErr } = await supabase
-      .from("truck_votes")
-      .insert({ truck_id: truck.id, guest_id: guestId, band: truck.band });
+    // Timeout maps onto the same rollback path as a server error (C4); the
+    // UNIQUE (guest_id, band) constraint keeps the data right regardless.
+    let insErr: { code?: string; message: string } | null = null;
+    try {
+      const res = await withTimeout(
+        supabase
+          .from("truck_votes")
+          .insert({ truck_id: truck.id, guest_id: guestId, band: truck.band })
+      );
+      insErr = res.error;
+    } catch {
+      insErr = { message: "Vote didn't go through — check signal and try again." };
+    }
     setSubmitting(null);
     if (insErr) {
       setMyVotes(prevVotes);
@@ -195,37 +237,40 @@ export default function AwardsPage() {
       </WBHint>
 
       <div style={{ flex: 1, paddingBottom: 64 }}>
-        {bootstrapped && trucks.length === 0 && (
-          <div
-            style={{
-              padding: "40px 24px",
-              textAlign: "center",
-              fontFamily: "var(--font-mono)",
-              fontSize: 13,
-              color: "var(--color-faded)",
-              letterSpacing: "0.16em",
-              textTransform: "uppercase",
-              lineHeight: 1.6,
-            }}
-          >
-            No trucks added yet.
-            <br />
-            <span style={{ fontSize: 11, opacity: 0.7 }}>
-              Trucks appear here before judging.
-            </span>
-          </div>
-        )}
-
-        {BAND_ORDER.map((band) => (
-          <BandSection
-            key={band}
-            band={band}
-            trucks={byBand[band]}
-            votedTruckId={myVotes[band]}
-            submittingId={submitting}
-            onVote={castVote}
+        {bootError && !bootstrapped ? (
+          <WBListStatus state="error" empty={null} onRetry={bootstrap} />
+        ) : trucks.length === 0 ? (
+          <WBListStatus
+            state={
+              !bootstrapped || loadState === "loading"
+                ? "loading"
+                : loadState === "error"
+                  ? "error"
+                  : "empty"
+            }
+            onRetry={fetchAll}
+            empty={
+              <>
+                No trucks added yet.
+                <br />
+                <span style={{ fontSize: 11, opacity: 0.7 }}>
+                  Trucks appear here before judging.
+                </span>
+              </>
+            }
           />
-        ))}
+        ) : (
+          BAND_ORDER.map((band) => (
+            <BandSection
+              key={band}
+              band={band}
+              trucks={byBand[band]}
+              votedTruckId={myVotes[band]}
+              submittingId={submitting}
+              onVote={castVote}
+            />
+          ))
+        )}
       </div>
 
       {error && (
