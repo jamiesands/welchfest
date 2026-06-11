@@ -13,7 +13,10 @@ import { useRouter } from "next/navigation";
 import WBLetterhead from "@/components/waybill/WBLetterhead";
 import WBLabel from "@/components/waybill/WBLabel";
 import WBHint from "@/components/waybill/WBHint";
+import WBListStatus from "@/components/waybill/WBListStatus";
 import { supabase } from "@/lib/supabase";
+import { withTimeout } from "@/lib/net";
+import { useRefetchOnResume } from "@/lib/useRefetchOnResume";
 import {
   DONE_STATUSES,
   SONG_COLS,
@@ -33,6 +36,10 @@ export default function SongsPage() {
   const [guestName, setGuestName] = useState<string | null>(null);
   const [depot, setDepot] = useState<string | null>(null);
   const [bootstrapped, setBootstrapped] = useState(false);
+  const [bootError, setBootError] = useState(false);
+  const [loadState, setLoadState] = useState<"loading" | "error" | "ready">(
+    "loading"
+  );
   const [queue, setQueue] = useState<SongWithGuest[]>([]);
   const [played, setPlayed] = useState<SongWithGuest[]>([]);
   const [myVotes, setMyVotes] = useState<Set<string>>(new Set());
@@ -43,20 +50,20 @@ export default function SongsPage() {
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<number | null>(null);
 
-  useEffect(() => {
+  // Guest bootstrap. maybeSingle() so a network failure is distinguishable
+  // from an unknown guest — only the latter bounces to /join (C4).
+  const bootstrap = useCallback(async () => {
     const id = localStorage.getItem("welchfest:guest_id");
     if (!id) {
       router.replace("/join");
       return;
     }
-    let cancelled = false;
-    (async () => {
-      const { data } = await supabase
-        .from("guests")
-        .select("name, depot")
-        .eq("id", id)
-        .single();
-      if (cancelled) return;
+    setBootError(false);
+    try {
+      const { data, error } = await withTimeout(
+        supabase.from("guests").select("name, depot").eq("id", id).maybeSingle()
+      );
+      if (error) throw error;
       if (!data) {
         router.replace("/join");
         return;
@@ -65,36 +72,47 @@ export default function SongsPage() {
       setGuestName(data.name);
       setDepot(data.depot);
       setBootstrapped(true);
-    })();
-    return () => {
-      cancelled = true;
-    };
+    } catch {
+      setBootError(true);
+    }
   }, [router]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    bootstrap();
+  }, [bootstrap]);
 
   const fetchAll = useCallback(async () => {
     if (!guestId) return;
-    const [activeRes, playedRes, votesRes] = await Promise.all([
-      supabase
-        .from("songs")
-        .select(SONG_COLS)
-        .in("status", ["queued", "cued"]),
-      supabase
-        .from("songs")
-        .select(SONG_COLS)
-        .in("status", DONE_STATUSES)
-        .order("finished_playing_at", { ascending: false, nullsFirst: false })
-        .limit(PLAYED_LIMIT),
-      supabase.from("song_votes").select("song_id").eq("guest_id", guestId),
-    ]);
-    if (activeRes.data) {
-      const rows = activeRes.data as unknown as SongWithGuest[];
+    try {
+      const [activeRes, playedRes, votesRes] = await withTimeout(
+        Promise.all([
+          supabase
+            .from("songs")
+            .select(SONG_COLS)
+            .in("status", ["queued", "cued"]),
+          supabase
+            .from("songs")
+            .select(SONG_COLS)
+            .in("status", DONE_STATUSES)
+            .order("finished_playing_at", { ascending: false, nullsFirst: false })
+            .limit(PLAYED_LIMIT),
+          supabase.from("song_votes").select("song_id").eq("guest_id", guestId),
+        ])
+      );
+      if (activeRes.error) throw activeRes.error;
+      const rows = (activeRes.data ?? []) as unknown as SongWithGuest[];
       setQueue(sortQueue(rows));
-    }
-    if (playedRes.data) {
-      setPlayed(playedRes.data as unknown as SongWithGuest[]);
-    }
-    if (votesRes.data) {
-      setMyVotes(new Set(votesRes.data.map((v) => v.song_id)));
+      if (playedRes.data) {
+        setPlayed(playedRes.data as unknown as SongWithGuest[]);
+      }
+      if (votesRes.data) {
+        setMyVotes(new Set(votesRes.data.map((v) => v.song_id)));
+      }
+      setLoadState("ready");
+    } catch {
+      // Keep stale rows if we have them (I1).
+      setLoadState((s) => (s === "ready" ? s : "error"));
     }
   }, [guestId]);
 
@@ -152,6 +170,17 @@ export default function SongsPage() {
     };
   }, [bootstrapped, fetchAll, guestId]);
 
+  // Catch up after the phone was locked / app backgrounded (C6); also
+  // retries a failed bootstrap when connectivity returns.
+  const onResume = useCallback(() => {
+    if (!bootstrapped) {
+      bootstrap();
+      return;
+    }
+    fetchAll();
+  }, [bootstrapped, bootstrap, fetchAll]);
+  useRefetchOnResume(onResume);
+
   const displayQueue = useMemo(() => {
     if (sort === "new") {
       return [...queue].sort((a, b) =>
@@ -174,25 +203,29 @@ export default function SongsPage() {
     const a = artist.trim();
     if (!t) return;
     setSubmitting(true);
-    const { data, error } = await supabase
-      .from("songs")
-      .insert({
-        guest_id: guestId,
-        guest_name: guestName,
-        depot,
-        title: t,
-        artist: a,
-      })
-      .select("id")
-      .single();
-    if (!error && data) {
-      await supabase
-        .from("song_votes")
-        .insert({ song_id: data.id, guest_id: guestId });
+    try {
+      const { data, error } = await withTimeout(
+        supabase
+          .from("songs")
+          .insert({
+            guest_id: guestId,
+            guest_name: guestName,
+            depot,
+            title: t,
+            artist: a,
+          })
+          .select("id")
+          .single()
+      );
+      if (error || !data) throw error ?? new Error("insert failed");
+      // Self-vote is best-effort; the song row is already in.
+      await withTimeout(
+        supabase.from("song_votes").insert({ song_id: data.id, guest_id: guestId })
+      ).catch(() => {});
       setTitle("");
       setArtist("");
       flash("Added to the queue.");
-    } else {
+    } catch {
       flash("Couldn't add — try again.");
     }
     setSubmitting(false);
@@ -216,16 +249,43 @@ export default function SongsPage() {
           : s
       )
     );
-    if (has) {
-      await supabase
-        .from("song_votes")
-        .delete()
-        .eq("song_id", songId)
-        .eq("guest_id", guestId);
-    } else {
-      await supabase
-        .from("song_votes")
-        .insert({ song_id: songId, guest_id: guestId });
+    // The DB is the source of truth (song_votes PK); on failure the
+    // optimistic change must be rolled back or the count lies (I2).
+    try {
+      if (has) {
+        const { error } = await withTimeout(
+          supabase
+            .from("song_votes")
+            .delete()
+            .eq("song_id", songId)
+            .eq("guest_id", guestId)
+        );
+        if (error) throw error;
+      } else {
+        const { error } = await withTimeout(
+          supabase
+            .from("song_votes")
+            .insert({ song_id: songId, guest_id: guestId })
+        );
+        // Duplicate key: this guest already voted (other tab/device) —
+        // the optimistic "voted" state is correct, keep it.
+        if (error && error.code !== "23505") throw error;
+      }
+    } catch {
+      setMyVotes((prev) => {
+        const next = new Set(prev);
+        if (has) next.add(songId);
+        else next.delete(songId);
+        return next;
+      });
+      setQueue((prev) =>
+        prev.map((s) =>
+          s.id === songId
+            ? { ...s, votes_count: s.votes_count + (has ? 1 : -1) }
+            : s
+        )
+      );
+      flash("Vote didn't go through — try again.");
     }
   }
 
@@ -281,21 +341,21 @@ export default function SongsPage() {
       </div>
 
       <div style={{ flex: 1, paddingBottom: 130 }}>
-        {displayQueue.length === 0 && played.length === 0 && (
-          <div
-            style={{
-              padding: "30px 24px",
-              textAlign: "center",
-              fontFamily: "var(--font-mono)",
-              fontSize: 13,
-              color: "var(--color-faded)",
-              letterSpacing: "0.16em",
-              textTransform: "uppercase",
-            }}
-          >
-            Nothing in the queue. Be first.
-          </div>
-        )}
+        {bootError && !bootstrapped ? (
+          <WBListStatus state="error" empty={null} onRetry={bootstrap} />
+        ) : displayQueue.length === 0 && played.length === 0 ? (
+          <WBListStatus
+            state={
+              !bootstrapped || loadState === "loading"
+                ? "loading"
+                : loadState === "error"
+                  ? "error"
+                  : "empty"
+            }
+            onRetry={fetchAll}
+            empty="Nothing in the queue. Be first."
+          />
+        ) : null}
 
         {displayQueue.map((s, i) => {
           const yours = !!guestId && s.guest_id === guestId;
