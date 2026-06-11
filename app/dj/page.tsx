@@ -9,6 +9,8 @@ import {
 } from "react";
 import WelchMark from "@/components/waybill/WelchMark";
 import { supabase } from "@/lib/supabase";
+import { withTimeout } from "@/lib/net";
+import { useRefetchOnResume } from "@/lib/useRefetchOnResume";
 import {
   SONG_COLS,
   songDepot,
@@ -38,22 +40,28 @@ export default function DjConsole() {
   const errorTimer = useRef<number | null>(null);
 
   const fetchAll = useCallback(async () => {
-    const [activeRes, playedRes] = await Promise.all([
-      supabase
-        .from("songs")
-        .select(SONG_COLS)
-        .in("status", [...QUEUED_STATUSES, "playing"]),
-      supabase
-        .from("songs")
-        .select("id", { count: "exact", head: true })
-        .eq("status", "played"),
-    ]);
-    if (activeRes.data) {
-      const rows = activeRes.data as unknown as SongWithGuest[];
-      setPlaying(rows.find((r) => r.status === "playing") ?? null);
-      setQueue(sortQueue(rows.filter((r) => r.status !== "playing")));
+    try {
+      const [activeRes, playedRes] = await withTimeout(
+        Promise.all([
+          supabase
+            .from("songs")
+            .select(SONG_COLS)
+            .in("status", [...QUEUED_STATUSES, "playing"]),
+          supabase
+            .from("songs")
+            .select("id", { count: "exact", head: true })
+            .eq("status", "played"),
+        ])
+      );
+      if (activeRes.data) {
+        const rows = activeRes.data as unknown as SongWithGuest[];
+        setPlaying(rows.find((r) => r.status === "playing") ?? null);
+        setQueue(sortQueue(rows.filter((r) => r.status !== "playing")));
+      }
+      if (typeof playedRes.count === "number") setPlayedCount(playedRes.count);
+    } catch {
+      // Keep the stale queue on screen; realtime/resume will catch up (C4).
     }
-    if (typeof playedRes.count === "number") setPlayedCount(playedRes.count);
   }, []);
 
   useEffect(() => {
@@ -86,6 +94,9 @@ export default function DjConsole() {
     };
   }, [fetchAll]);
 
+  // Catch up after the laptop/phone running the console was asleep (C6).
+  useRefetchOnResume(fetchAll);
+
   function flashError(msg: string) {
     setLastError(msg);
     if (errorTimer.current) window.clearTimeout(errorTimer.current);
@@ -98,10 +109,13 @@ export default function DjConsole() {
   ) {
     setBusy(true);
     try {
+      // 10s deadline: one stalled request must not wedge the whole console
+      // behind the busy lock (HARDENING-AUDIT.md I3).
       const res = await fetch(`/api/dj/${path}`, {
         method: "POST",
         headers: body ? { "content-type": "application/json" } : undefined,
         body: body ? JSON.stringify(body) : undefined,
+        signal: AbortSignal.timeout(10_000),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -109,6 +123,8 @@ export default function DjConsole() {
       } else {
         await fetchAll();
       }
+    } catch {
+      flashError(`${path} timed out — check signal and retry`);
     } finally {
       setBusy(false);
     }
