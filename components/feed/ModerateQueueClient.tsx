@@ -19,17 +19,25 @@ export default function ModerateQueueClient({
   const [view, setView] = useState<View>("live");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [, startTransition] = useTransition();
 
   const refresh = useCallback(async () => {
-    const res = await fetch("/api/moderate/queue", { cache: "no-store" });
-    if (!res.ok) return;
-    const data = (await res.json()) as {
-      live: PhotoWithGuest[];
-      removed: PhotoWithGuest[];
-    };
-    setLive(data.live);
-    setRemoved(data.removed);
+    try {
+      const res = await fetch("/api/moderate/queue", {
+        cache: "no-store",
+        signal: AbortSignal.timeout(10_000),
+      });
+      if (!res.ok) return;
+      const data = (await res.json()) as {
+        live: PhotoWithGuest[];
+        removed: PhotoWithGuest[];
+      };
+      setLive(data.live);
+      setRemoved(data.removed);
+    } catch {
+      // Background poll — next tick retries.
+    }
   }, []);
 
   // Poll while the tab is visible so new uploads show up without a reload.
@@ -45,16 +53,29 @@ export default function ModerateQueueClient({
     };
   }, [refresh]);
 
+  // Failures must be visible — a moderator on flaky wifi otherwise can't
+  // tell a failed Remove from lag (HARDENING-AUDIT.md I5).
   async function remove(photo: PhotoWithGuest) {
     setBusyId(photo.id);
-    const res = await fetch("/api/moderate/hide", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ id: photo.id }),
-    });
+    setActionError(null);
+    let ok = false;
+    try {
+      const res = await fetch("/api/moderate/hide", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ id: photo.id }),
+        signal: AbortSignal.timeout(10_000),
+      });
+      ok = res.ok;
+    } catch {
+      ok = false;
+    }
     setBusyId(null);
     setConfirmId(null);
-    if (!res.ok) return;
+    if (!ok) {
+      setActionError("Remove didn't go through — try again.");
+      return;
+    }
     startTransition(() => {
       setLive((prev) => prev.filter((p) => p.id !== photo.id));
       setRemoved((prev) => [
@@ -66,13 +87,24 @@ export default function ModerateQueueClient({
 
   async function restore(photo: PhotoWithGuest) {
     setBusyId(photo.id);
-    const res = await fetch("/api/moderate/approve", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ id: photo.id }),
-    });
+    setActionError(null);
+    let ok = false;
+    try {
+      const res = await fetch("/api/moderate/approve", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ id: photo.id }),
+        signal: AbortSignal.timeout(10_000),
+      });
+      ok = res.ok;
+    } catch {
+      ok = false;
+    }
     setBusyId(null);
-    if (!res.ok) return;
+    if (!ok) {
+      setActionError("Restore didn't go through — try again.");
+      return;
+    }
     startTransition(() => {
       setRemoved((prev) => prev.filter((p) => p.id !== photo.id));
       setLive((prev) => [
@@ -156,6 +188,26 @@ export default function ModerateQueueClient({
           label={`Removed · ${removed.length}`}
         />
       </div>
+
+      {actionError && (
+        <div
+          role="alert"
+          style={{
+            margin: "12px 16px 0",
+            fontFamily: "var(--font-mono)",
+            fontSize: 11,
+            letterSpacing: "0.14em",
+            textTransform: "uppercase",
+            color: "var(--color-stamp)",
+            border: "1.5px solid var(--color-stamp)",
+            background: "#b8412a11",
+            padding: "6px 10px",
+            fontWeight: 700,
+          }}
+        >
+          {actionError}
+        </div>
+      )}
 
       {list.length === 0 && (
         <div

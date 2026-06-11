@@ -5,6 +5,7 @@ import WBLetterhead from "@/components/waybill/WBLetterhead";
 import WBLabel from "@/components/waybill/WBLabel";
 import WBStamp from "@/components/waybill/WBStamp";
 import { supabase } from "@/lib/supabase";
+import { withTimeout } from "@/lib/net";
 import {
   BAND_LABEL,
   BAND_ORDER,
@@ -17,16 +18,27 @@ export default function ResultsPage() {
   const [trucks, setTrucks] = useState<Truck[]>([]);
   const [loading, setLoading] = useState(false);
   const [lastLoaded, setLastLoaded] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState(false);
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from("trucks")
-      .select(TRUCK_COLS)
-      .order("vote_count", { ascending: false })
-      .order("display_name", { ascending: true });
-    if (data) setTrucks(data as unknown as Truck[]);
-    setLastLoaded(new Date().toLocaleTimeString("en-GB"));
+    // The closing announcement is read off this page — a failed refresh
+    // must say so rather than show a stale tally as current (C4/I1).
+    try {
+      const { data, error } = await withTimeout(
+        supabase
+          .from("trucks")
+          .select(TRUCK_COLS)
+          .order("vote_count", { ascending: false })
+          .order("display_name", { ascending: true })
+      );
+      if (error || !data) throw error ?? new Error("load failed");
+      setTrucks(data as unknown as Truck[]);
+      setLastLoaded(new Date().toLocaleTimeString("en-GB"));
+      setLoadError(false);
+    } catch {
+      setLoadError(true);
+    }
     setLoading(false);
   }, []);
 
@@ -63,12 +75,17 @@ export default function ResultsPage() {
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: 10,
-              color: "var(--color-faded)",
+              color: loadError ? "var(--color-stamp)" : "var(--color-faded)",
               letterSpacing: "0.14em",
               marginTop: 2,
+              fontWeight: loadError ? 700 : undefined,
             }}
           >
-            {lastLoaded ? `LOADED ${lastLoaded}` : "—"}
+            {loadError
+              ? `LOAD FAILED${lastLoaded ? ` · SHOWING ${lastLoaded}` : ""} — TAP REFRESH`
+              : lastLoaded
+                ? `LOADED ${lastLoaded}`
+                : "—"}
           </div>
         </div>
         <button

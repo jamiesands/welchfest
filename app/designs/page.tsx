@@ -13,9 +13,12 @@ import { useRouter } from "next/navigation";
 import WBLetterhead from "@/components/waybill/WBLetterhead";
 import WBLabel from "@/components/waybill/WBLabel";
 import WBStamp from "@/components/waybill/WBStamp";
+import WBListStatus from "@/components/waybill/WBListStatus";
 import { supabase } from "@/lib/supabase";
+import { useRefetchOnResume } from "@/lib/useRefetchOnResume";
 import { BUCKET } from "@/lib/photos";
-import { resizeAndCompress } from "@/lib/image";
+import { isWebSafeImage, prepareImageForUpload } from "@/lib/image";
+import { TimeoutError, UPLOAD_TIMEOUT_MS, withTimeout } from "@/lib/net";
 
 const MAX_BYTES = 25 * 1024 * 1024;
 const COMPRESS_THRESHOLD = 2 * 1024 * 1024;
@@ -57,6 +60,10 @@ export default function DesignsPage() {
   const router = useRouter();
   const [guestId, setGuestId] = useState<string | null>(null);
   const [bootstrapped, setBootstrapped] = useState(false);
+  const [bootError, setBootError] = useState(false);
+  const [loadState, setLoadState] = useState<"loading" | "error" | "ready">(
+    "loading"
+  );
   const [name, setName] = useState("");
   const [employeeName, setEmployeeName] = useState("");
   const [file, setFile] = useState<File | null>(null);
@@ -70,20 +77,20 @@ export default function DesignsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Guest session bootstrap. Name pre-fills from welchfest.guests.
-  useEffect(() => {
+  // maybeSingle() so a network failure is distinguishable from an unknown
+  // guest — only the latter bounces to /join (C4).
+  const bootstrap = useCallback(async () => {
     const id = localStorage.getItem("welchfest:guest_id");
     if (!id) {
       router.replace("/join");
       return;
     }
-    let cancelled = false;
-    (async () => {
-      const { data } = await supabase
-        .from("guests")
-        .select("id, name")
-        .eq("id", id)
-        .single();
-      if (cancelled) return;
+    setBootError(false);
+    try {
+      const { data, error } = await withTimeout(
+        supabase.from("guests").select("id, name").eq("id", id).maybeSingle()
+      );
+      if (error) throw error;
       if (!data) {
         router.replace("/join");
         return;
@@ -91,11 +98,15 @@ export default function DesignsPage() {
       setGuestId(id);
       setName(data.name);
       setBootstrapped(true);
-    })();
-    return () => {
-      cancelled = true;
-    };
+    } catch {
+      setBootError(true);
+    }
   }, [router]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    bootstrap();
+  }, [bootstrap]);
 
   useEffect(() => {
     if (!file) {
@@ -115,17 +126,34 @@ export default function DesignsPage() {
   }, []);
 
   const fetchAll = useCallback(async () => {
-    const { data } = await supabase
-      .from("lorry_designs")
-      .select("id, guest_id, name, employee_name, image_url, created_at")
-      .order("created_at", { ascending: false });
-    if (data) setDesigns(data as unknown as Design[]);
+    try {
+      const { data, error } = await withTimeout(
+        supabase
+          .from("lorry_designs")
+          .select("id, guest_id, name, employee_name, image_url, created_at")
+          .order("created_at", { ascending: false })
+      );
+      if (error || !data) throw error ?? new Error("load failed");
+      setDesigns(data as unknown as Design[]);
+      setLoadState("ready");
+    } catch {
+      // Keep stale rows if we have them (I1).
+      setLoadState((s) => (s === "ready" ? s : "error"));
+    }
   }, []);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchAll();
   }, [fetchAll]);
+
+  // Catch up after the phone was locked / app backgrounded (C6); also
+  // retries a failed bootstrap when connectivity returns.
+  const onResume = useCallback(() => {
+    if (!bootstrapped) bootstrap();
+    fetchAll();
+  }, [bootstrapped, bootstrap, fetchAll]);
+  useRefetchOnResume(onResume);
 
   useEffect(() => {
     const channel = supabase
@@ -174,36 +202,50 @@ export default function DesignsPage() {
     if (!canSubmit) return;
     setSubmitting(true);
     setError(null);
+
+    // Conversion failures (HEIC the phone can't decode, C5) get their own
+    // message and never reach the network.
+    let body: Blob;
     try {
-      const body =
-        file && file.size > COMPRESS_THRESHOLD
-          ? await resizeAndCompress(file, { maxEdge: 2400, quality: 0.85 })
-          : file!;
+      body = await prepareImageForUpload(
+        file!,
+        { maxEdge: 2400, quality: 0.85 },
+        COMPRESS_THRESHOLD
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't read that photo.");
+      setSubmitting(false);
+      return;
+    }
+
+    try {
       const stamp = Date.now();
       const rand = Math.random().toString(36).slice(2, 8);
-      const ext = file ? extOf(file.name) : "jpg";
+      // If we converted, the blob is a JPEG regardless of the original name.
+      const ext = file && body === file && isWebSafeImage(file) ? extOf(file.name) : "jpg";
       const path = `lorry-designs/${stamp}-${rand}.${ext}`;
 
-      const { error: upErr } = await supabase.storage
-        .from(BUCKET)
-        .upload(path, body, {
+      const { error: upErr } = await withTimeout(
+        supabase.storage.from(BUCKET).upload(path, body, {
           contentType: body.type || "image/jpeg",
           upsert: false,
-        });
+        }),
+        UPLOAD_TIMEOUT_MS
+      );
       if (upErr) throw upErr;
 
       const imageUrl = PUBLIC_URL_BASE
         ? `${PUBLIC_URL_BASE}${path}`
         : supabase.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
 
-      const { error: insErr } = await supabase
-        .from("lorry_designs")
-        .insert({
+      const { error: insErr } = await withTimeout(
+        supabase.from("lorry_designs").insert({
           guest_id: guestId,
           name: name.trim(),
           employee_name: employeeName.trim() || null,
           image_url: imageUrl,
-        });
+        })
+      );
       if (insErr) throw insErr;
 
       setFile(null);
@@ -211,7 +253,15 @@ export default function DesignsPage() {
       if (fileInputRef.current) fileInputRef.current.value = "";
       setSubmittedAt(Date.now());
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      // The timed-out request may still land, so steer the guest to check
+      // the gallery before re-sending (HARDENING-AUDIT.md C4).
+      setError(
+        err instanceof TimeoutError
+          ? "Poor signal — that took too long. Check the gallery in a moment before trying again, it may have gone through."
+          : err instanceof Error
+            ? err.message
+            : String(err)
+      );
     } finally {
       setSubmitting(false);
     }
@@ -329,7 +379,7 @@ export default function DesignsPage() {
           </div>
         </div>
 
-        {error && (
+        {(error || (bootError && !bootstrapped)) && (
           <div
             role="alert"
             style={{
@@ -344,7 +394,26 @@ export default function DesignsPage() {
               fontWeight: 700,
             }}
           >
-            {error}
+            {error ?? (
+              <>
+                Can&rsquo;t reach the depot — submissions are paused.{" "}
+                <button
+                  type="button"
+                  onClick={bootstrap}
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    padding: 0,
+                    font: "inherit",
+                    color: "inherit",
+                    textDecoration: "underline",
+                    cursor: "pointer",
+                  }}
+                >
+                  Retry
+                </button>
+              </>
+            )}
           </div>
         )}
 
@@ -399,19 +468,17 @@ export default function DesignsPage() {
 
       <div style={{ flex: 1, paddingBottom: 64 }}>
         {designs.length === 0 ? (
-          <div
-            style={{
-              padding: "30px 24px",
-              textAlign: "center",
-              fontFamily: "var(--font-mono)",
-              fontSize: 13,
-              color: "var(--color-faded)",
-              letterSpacing: "0.16em",
-              textTransform: "uppercase",
-            }}
-          >
-            No designs yet. Be the first.
-          </div>
+          <WBListStatus
+            state={
+              loadState === "loading"
+                ? "loading"
+                : loadState === "error"
+                  ? "error"
+                  : "empty"
+            }
+            onRetry={fetchAll}
+            empty="No designs yet. Be the first."
+          />
         ) : (
           <ul
             className="design-grid"

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { MOD_COOKIE, moderatorKey } from "@/lib/moderator";
+import { MOD_COOKIE, moderatorKey, moderatorToken } from "@/lib/moderator";
 
 export async function POST(req: Request) {
   const form = await req.formData();
@@ -14,12 +14,13 @@ export async function POST(req: Request) {
   const safeNext =
     next.startsWith("/moderate") || next.startsWith("/dj") ? next : "/moderate";
   const res = NextResponse.redirect(new URL(safeNext, req.url), { status: 303 });
-  res.cookies.set(MOD_COOKIE, "1", {
+  // 72h so a Friday-evening login still covers the whole event day.
+  res.cookies.set(MOD_COOKIE, await moderatorToken(), {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
     path: "/",
-    maxAge: 60 * 60 * 24,
+    maxAge: 60 * 60 * 72,
   });
   return res;
 }

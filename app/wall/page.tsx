@@ -10,7 +10,10 @@ import {
 } from "react";
 import { useSearchParams } from "next/navigation";
 import WelchMark from "@/components/waybill/WelchMark";
+import WBListStatus from "@/components/waybill/WBListStatus";
 import { supabase } from "@/lib/supabase";
+import { withTimeout } from "@/lib/net";
+import { useRefetchOnResume } from "@/lib/useRefetchOnResume";
 import { photoImageUrl, type PhotoWithGuest } from "@/lib/photos";
 
 const INITIAL_LIMIT = 200;
@@ -59,7 +62,9 @@ function Wall() {
 
   const [photos, setPhotos] = useState<PhotoWithGuest[]>([]);
   const [totalCount, setTotalCount] = useState<number | null>(null);
-  const [bootstrapped, setBootstrapped] = useState(false);
+  const [loadState, setLoadState] = useState<"loading" | "error" | "ready">(
+    "loading"
+  );
   const [nowMs, setNowMs] = useState(() => Date.now());
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -73,29 +78,41 @@ function Wall() {
   }, []);
 
   const loadInitial = useCallback(async () => {
-    const [rowsRes, countRes] = await Promise.all([
-      supabase
-        .from("photos")
-        .select(WALL_COLS)
-        .eq("type", "photo")
-        .eq("status", "approved")
-        .order("created_at", { ascending: false })
-        .limit(INITIAL_LIMIT),
-      supabase
-        .from("photos")
-        .select("id", { count: "exact", head: true })
-        .eq("type", "photo")
-        .eq("status", "approved"),
-    ]);
-    if (rowsRes.data) setPhotos(rowsRes.data as unknown as PhotoWithGuest[]);
-    if (typeof countRes.count === "number") setTotalCount(countRes.count);
-    setBootstrapped(true);
+    try {
+      const [rowsRes, countRes] = await withTimeout(
+        Promise.all([
+          supabase
+            .from("photos")
+            .select(WALL_COLS)
+            .eq("type", "photo")
+            .eq("status", "approved")
+            .order("created_at", { ascending: false })
+            .limit(INITIAL_LIMIT),
+          supabase
+            .from("photos")
+            .select("id", { count: "exact", head: true })
+            .eq("type", "photo")
+            .eq("status", "approved"),
+        ])
+      );
+      if (rowsRes.error) throw rowsRes.error;
+      setPhotos((rowsRes.data ?? []) as unknown as PhotoWithGuest[]);
+      if (typeof countRes.count === "number") setTotalCount(countRes.count);
+      setLoadState("ready");
+    } catch {
+      // A failed load must not show "Awaiting first cargo" on the big
+      // screen with 200 real photos behind it (I1).
+      setLoadState((s) => (s === "ready" ? s : "error"));
+    }
   }, []);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     loadInitial();
   }, [loadInitial]);
+
+  // The wall runs all day on venue wifi — recover after sleep/drops (C6).
+  useRefetchOnResume(loadInitial);
 
   // Realtime: prepend approved guest photos as they arrive. Cap the
   // array so this can run on a laptop all day without unbounded growth.
@@ -276,8 +293,25 @@ function Wall() {
           position: "relative",
         }}
       >
-        {bootstrapped && photos.length === 0 ? (
-          <EmptyState />
+        {photos.length === 0 ? (
+          loadState === "ready" ? (
+            <EmptyState />
+          ) : (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                height: "100%",
+              }}
+            >
+              <WBListStatus
+                state={loadState === "error" ? "error" : "loading"}
+                empty={null}
+                onRetry={loadInitial}
+              />
+            </div>
+          )
         ) : (
           <div ref={trackRef}>
             <div ref={copyARef}>

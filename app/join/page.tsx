@@ -7,6 +7,7 @@ import WBLabel from "@/components/waybill/WBLabel";
 import WBPostmark from "@/components/waybill/WBPostmark";
 import WBHint from "@/components/waybill/WBHint";
 import { supabase } from "@/lib/supabase";
+import { withTimeout } from "@/lib/net";
 
 type DepotCode = "DXF" | "BED" | "STI" | "GUEST";
 
@@ -32,18 +33,23 @@ export default function JoinPage() {
     if (!canSubmit || !depot) return;
     setSubmitting(true);
     setError(null);
-    const { data, error: insertError } = await supabase
-      .from("guests")
-      .insert({ name: name.trim(), depot, consent_given: consent })
-      .select("id")
-      .single();
-    if (insertError || !data) {
-      setError("Could not file your entry. Try again.");
+    // Timeout so a dead-signal moment can't leave FILING… stuck forever;
+    // the button re-enables and the guest just taps again (C4).
+    try {
+      const { data, error: insertError } = await withTimeout(
+        supabase
+          .from("guests")
+          .insert({ name: name.trim(), depot, consent_given: consent })
+          .select("id")
+          .single()
+      );
+      if (insertError || !data) throw insertError ?? new Error("no row");
+      localStorage.setItem("welchfest:guest_id", data.id);
+      router.replace("/feed");
+    } catch {
+      setError("Could not file your entry — check your signal and try again.");
       setSubmitting(false);
-      return;
     }
-    localStorage.setItem("welchfest:guest_id", data.id);
-    router.replace("/feed");
   }
 
   return (

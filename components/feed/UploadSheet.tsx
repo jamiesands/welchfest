@@ -11,7 +11,8 @@ import {
 import WBLabel from "@/components/waybill/WBLabel";
 import { supabase } from "@/lib/supabase";
 import { BUCKET, photoPath } from "@/lib/photos";
-import { resizeAndCompress } from "@/lib/image";
+import { prepareImageForUpload } from "@/lib/image";
+import { TimeoutError, UPLOAD_TIMEOUT_MS, withTimeout } from "@/lib/net";
 
 const MAX_BYTES = 25 * 1024 * 1024;
 const COMPRESS_THRESHOLD = 2 * 1024 * 1024;
@@ -37,18 +38,21 @@ export default function UploadSheet({ guestId, guestName, depot, onClose }: Prop
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // While a photo is in flight the sheet must not be dismissable by a stray
+  // backdrop tap or Escape — the guest would have no idea whether it posted
+  // (HARDENING-AUDIT.md I4). The ✕ button stays live as a deliberate out.
   useEffect(() => {
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape" && !submitting) onClose();
     }
     document.addEventListener("keydown", onKey);
     return () => {
       document.body.style.overflow = prevOverflow;
       document.removeEventListener("keydown", onKey);
     };
-  }, [onClose]);
+  }, [onClose, submitting]);
 
   useEffect(() => {
     if (!file) {
@@ -79,28 +83,39 @@ export default function UploadSheet({ guestId, guestName, depot, onClose }: Prop
     setSubmitting(true);
     setError(null);
 
+    // Conversion failures (HEIC the phone can't decode, C5) get their own
+    // message and never reach the network.
+    let body: Blob;
     try {
-      const body =
-        file.size > COMPRESS_THRESHOLD
-          ? await resizeAndCompress(file, { maxEdge: 2400, quality: 0.85 })
-          : file;
+      body = await prepareImageForUpload(
+        file,
+        { maxEdge: 2400, quality: 0.85 },
+        COMPRESS_THRESHOLD
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't read that photo.");
+      setSubmitting(false);
+      return;
+    }
+
+    try {
       const path = photoPath(guestId);
 
-      const { error: upErr } = await supabase.storage
-        .from(BUCKET)
-        .upload(path, body, {
+      const { error: upErr } = await withTimeout(
+        supabase.storage.from(BUCKET).upload(path, body, {
           contentType: body.type || "image/jpeg",
           upsert: false,
-        });
+        }),
+        UPLOAD_TIMEOUT_MS
+      );
       if (upErr) throw upErr;
 
       const imageUrl = PUBLIC_URL_BASE
         ? `${PUBLIC_URL_BASE}${path}`
         : supabase.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
 
-      const { error: insErr } = await supabase
-        .from("photos")
-        .insert({
+      const { error: insErr } = await withTimeout(
+        supabase.from("photos").insert({
           guest_id: guestId,
           guest_name: guestName,
           depot,
@@ -109,12 +124,20 @@ export default function UploadSheet({ guestId, guestName, depot, onClose }: Prop
           type: "photo",
           status: "approved",
           caption: caption.trim() || null,
-        });
+        })
+      );
       if (insErr) throw insErr;
 
       onClose();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Upload failed.";
+      // The timed-out request may still land, so steer the guest to check
+      // the feed before re-sending (HARDENING-AUDIT.md C4).
+      const msg =
+        err instanceof TimeoutError
+          ? "Poor signal — that took too long. Check the feed in a moment before trying again, it may have posted."
+          : err instanceof Error
+            ? err.message
+            : "Upload failed.";
       setError(msg);
       setSubmitting(false);
     }
@@ -127,7 +150,9 @@ export default function UploadSheet({ guestId, guestName, depot, onClose }: Prop
       role="dialog"
       aria-modal="true"
       aria-label="Add a photo"
-      onClick={onClose}
+      onClick={() => {
+        if (!submitting) onClose();
+      }}
       style={{
         position: "fixed",
         inset: 0,
