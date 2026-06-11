@@ -476,6 +476,12 @@ export default function DesignsPage() {
             Design
           </span>
         </span>
+        <Link
+          href="/whats-on"
+          style={{ flex: 1, textAlign: "center", opacity: 0.55, color: "inherit" }}
+        >
+          Agenda
+        </Link>
       </div>
 
       {open && <Lightbox design={open} onClose={() => setOpen(null)} />}

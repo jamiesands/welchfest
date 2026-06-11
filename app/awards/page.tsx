@@ -293,6 +293,12 @@ export default function AwardsPage() {
         >
           Design
         </Link>
+        <Link
+          href="/whats-on"
+          style={{ flex: 1, textAlign: "center", opacity: 0.55, color: "inherit" }}
+        >
+          Agenda
+        </Link>
       </div>
     </main>
   );
