@@ -13,7 +13,9 @@ import { useRouter } from "next/navigation";
 import WBLetterhead from "@/components/waybill/WBLetterhead";
 import WBLabel from "@/components/waybill/WBLabel";
 import WBStamp from "@/components/waybill/WBStamp";
+import WBListStatus from "@/components/waybill/WBListStatus";
 import { supabase } from "@/lib/supabase";
+import { useRefetchOnResume } from "@/lib/useRefetchOnResume";
 import { BUCKET } from "@/lib/photos";
 import { isWebSafeImage, prepareImageForUpload } from "@/lib/image";
 import { TimeoutError, UPLOAD_TIMEOUT_MS, withTimeout } from "@/lib/net";
@@ -58,6 +60,10 @@ export default function DesignsPage() {
   const router = useRouter();
   const [guestId, setGuestId] = useState<string | null>(null);
   const [bootstrapped, setBootstrapped] = useState(false);
+  const [bootError, setBootError] = useState(false);
+  const [loadState, setLoadState] = useState<"loading" | "error" | "ready">(
+    "loading"
+  );
   const [name, setName] = useState("");
   const [employeeName, setEmployeeName] = useState("");
   const [file, setFile] = useState<File | null>(null);
@@ -71,20 +77,20 @@ export default function DesignsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Guest session bootstrap. Name pre-fills from welchfest.guests.
-  useEffect(() => {
+  // maybeSingle() so a network failure is distinguishable from an unknown
+  // guest — only the latter bounces to /join (C4).
+  const bootstrap = useCallback(async () => {
     const id = localStorage.getItem("welchfest:guest_id");
     if (!id) {
       router.replace("/join");
       return;
     }
-    let cancelled = false;
-    (async () => {
-      const { data } = await supabase
-        .from("guests")
-        .select("id, name")
-        .eq("id", id)
-        .single();
-      if (cancelled) return;
+    setBootError(false);
+    try {
+      const { data, error } = await withTimeout(
+        supabase.from("guests").select("id, name").eq("id", id).maybeSingle()
+      );
+      if (error) throw error;
       if (!data) {
         router.replace("/join");
         return;
@@ -92,11 +98,15 @@ export default function DesignsPage() {
       setGuestId(id);
       setName(data.name);
       setBootstrapped(true);
-    })();
-    return () => {
-      cancelled = true;
-    };
+    } catch {
+      setBootError(true);
+    }
   }, [router]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    bootstrap();
+  }, [bootstrap]);
 
   useEffect(() => {
     if (!file) {
@@ -116,17 +126,34 @@ export default function DesignsPage() {
   }, []);
 
   const fetchAll = useCallback(async () => {
-    const { data } = await supabase
-      .from("lorry_designs")
-      .select("id, guest_id, name, employee_name, image_url, created_at")
-      .order("created_at", { ascending: false });
-    if (data) setDesigns(data as unknown as Design[]);
+    try {
+      const { data, error } = await withTimeout(
+        supabase
+          .from("lorry_designs")
+          .select("id, guest_id, name, employee_name, image_url, created_at")
+          .order("created_at", { ascending: false })
+      );
+      if (error || !data) throw error ?? new Error("load failed");
+      setDesigns(data as unknown as Design[]);
+      setLoadState("ready");
+    } catch {
+      // Keep stale rows if we have them (I1).
+      setLoadState((s) => (s === "ready" ? s : "error"));
+    }
   }, []);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchAll();
   }, [fetchAll]);
+
+  // Catch up after the phone was locked / app backgrounded (C6); also
+  // retries a failed bootstrap when connectivity returns.
+  const onResume = useCallback(() => {
+    if (!bootstrapped) bootstrap();
+    fetchAll();
+  }, [bootstrapped, bootstrap, fetchAll]);
+  useRefetchOnResume(onResume);
 
   useEffect(() => {
     const channel = supabase
@@ -352,7 +379,7 @@ export default function DesignsPage() {
           </div>
         </div>
 
-        {error && (
+        {(error || (bootError && !bootstrapped)) && (
           <div
             role="alert"
             style={{
@@ -367,7 +394,26 @@ export default function DesignsPage() {
               fontWeight: 700,
             }}
           >
-            {error}
+            {error ?? (
+              <>
+                Can&rsquo;t reach the depot — submissions are paused.{" "}
+                <button
+                  type="button"
+                  onClick={bootstrap}
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    padding: 0,
+                    font: "inherit",
+                    color: "inherit",
+                    textDecoration: "underline",
+                    cursor: "pointer",
+                  }}
+                >
+                  Retry
+                </button>
+              </>
+            )}
           </div>
         )}
 
@@ -422,19 +468,17 @@ export default function DesignsPage() {
 
       <div style={{ flex: 1, paddingBottom: 64 }}>
         {designs.length === 0 ? (
-          <div
-            style={{
-              padding: "30px 24px",
-              textAlign: "center",
-              fontFamily: "var(--font-mono)",
-              fontSize: 13,
-              color: "var(--color-faded)",
-              letterSpacing: "0.16em",
-              textTransform: "uppercase",
-            }}
-          >
-            No designs yet. Be the first.
-          </div>
+          <WBListStatus
+            state={
+              loadState === "loading"
+                ? "loading"
+                : loadState === "error"
+                  ? "error"
+                  : "empty"
+            }
+            onRetry={fetchAll}
+            empty="No designs yet. Be the first."
+          />
         ) : (
           <ul
             className="design-grid"
