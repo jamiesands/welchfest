@@ -506,7 +506,7 @@ function TruckRow({
             marginTop: 1,
           }}
         >
-          {truck.driver_name} ·{" "}
+          {truck.driver_name ? `${truck.driver_name} · ` : ""}
           <span style={{ color: "var(--color-blue)" }}>{truck.depot}</span>{" "}
           · {truck.year}
         </div>

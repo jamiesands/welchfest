@@ -26,7 +26,6 @@ export async function POST(req: Request) {
     typeof body.year === "string" ? Number(body.year) : NaN;
   const photoUrl = str(body.photo_url);
 
-  if (!driver) return NextResponse.json({ error: "driver_name required" }, { status: 400 });
   if (!display) return NextResponse.json({ error: "display_name required" }, { status: 400 });
   if (!depot || !DEPOTS.has(depot)) return NextResponse.json({ error: "depot must be DXF, BED, or STI" }, { status: 400 });
   if (!Number.isInteger(year) || year < 1980 || year > 2026) {
@@ -36,7 +35,7 @@ export async function POST(req: Request) {
   const { data, error } = await supabaseAdmin()
     .from("trucks")
     .insert({
-      driver_name: driver,
+      driver_name: driver ?? "",
       display_name: display,
       depot,
       year,
