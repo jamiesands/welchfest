@@ -45,8 +45,8 @@ const BAND_LABEL: Record<Band, string> = {
 
 function previewBand(year: number | null): Band | null {
   if (year === null || Number.isNaN(year)) return null;
-  if (year >= 2022) return "new";
-  if (year >= 2018) return "mid";
+  if (year >= 2024) return "new";
+  if (year >= 2021) return "mid";
   return "veteran";
 }
 
