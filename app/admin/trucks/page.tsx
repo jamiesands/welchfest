@@ -201,7 +201,6 @@ function TrucksPanel() {
   }
 
   const canSubmit =
-    !!driverName.trim() &&
     !!displayName.trim() &&
     yearNum !== null &&
     !submitting;
@@ -287,7 +286,7 @@ function TrucksPanel() {
   return (
     <div style={{ padding: "16px 18px 32px", display: "flex", flexDirection: "column", gap: 16 }}>
       <form onSubmit={onSubmit} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        <Field label="Driver">
+        <Field label="Driver (optional)">
           <TextInput value={driverName} onChange={setDriverName} placeholder="Driver name" />
         </Field>
         <Field label="Display / reg">
@@ -498,7 +497,7 @@ function TrucksPanel() {
                           marginTop: 1,
                         }}
                       >
-                        {t.driver_name} ·{" "}
+                        {t.driver_name ? `${t.driver_name} · ` : ""}
                         <span style={{ color: "var(--color-blue)" }}>{t.depot}</span>{" "}
                         · {t.year}
                       </div>

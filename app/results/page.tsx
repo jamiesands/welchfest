@@ -263,7 +263,7 @@ function BandResults({ band, trucks }: { band: Band; trucks: Truck[] }) {
                       marginTop: 1,
                     }}
                   >
-                    {t.driver_name} ·{" "}
+                    {t.driver_name ? `${t.driver_name} · ` : ""}
                     <span style={{ color: "var(--color-blue)" }}>
                       {t.depot}
                     </span>{" "}
