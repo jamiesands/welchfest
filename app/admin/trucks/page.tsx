@@ -33,6 +33,8 @@ type Truck = {
   year: number;
   band: Band;
   photo_url: string | null;
+  vote_count: number;
+  placement: number | null;
   created_at: string;
 };
 
@@ -45,8 +47,8 @@ const BAND_LABEL: Record<Band, string> = {
 
 function previewBand(year: number | null): Band | null {
   if (year === null || Number.isNaN(year)) return null;
-  if (year >= 2022) return "new";
-  if (year >= 2018) return "mid";
+  if (year >= 2024) return "new";
+  if (year >= 2021) return "mid";
   return "veteran";
 }
 
@@ -159,6 +161,7 @@ function TrucksPanel() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [placingId, setPlacingId] = useState<string | null>(null);
 
   const yearNum = useMemo(() => {
     const n = Number(yearStr);
@@ -169,7 +172,7 @@ function TrucksPanel() {
   const fetchAll = useCallback(async () => {
     const { data } = await supabase
       .from("trucks")
-      .select("id, driver_name, display_name, depot, year, band, photo_url, created_at")
+      .select("id, driver_name, display_name, depot, year, band, photo_url, vote_count, placement, created_at")
       .order("created_at", { ascending: false });
     if (data) setTrucks(data as unknown as Truck[]);
   }, []);
@@ -274,6 +277,35 @@ function TrucksPanel() {
       setTrucks((prev) => prev.filter((t) => t.id !== id));
     } finally {
       setDeletingId(null);
+    }
+  }
+
+  async function onSetPlacement(truck: Truck, placement: number | null) {
+    setPlacingId(truck.id);
+    setError(null);
+    try {
+      const res = await fetch(`/api/admin/trucks/${truck.id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ placement }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error ?? "Placement failed — log in at /moderate first.");
+        return;
+      }
+      // Placements are unique within a band: reflect the same clearing the API does.
+      setTrucks((prev) =>
+        prev.map((t) => {
+          if (t.id === truck.id) return { ...t, placement };
+          if (placement !== null && t.band === truck.band && t.placement === placement) {
+            return { ...t, placement: null };
+          }
+          return t;
+        })
+      );
+    } finally {
+      setPlacingId(null);
     }
   }
 
@@ -433,10 +465,11 @@ function TrucksPanel() {
                           ? "1px dashed rgba(30,27,22,0.27)"
                           : "none",
                       display: "flex",
-                      gap: 10,
-                      alignItems: "center",
+                      flexDirection: "column",
+                      gap: 8,
                     }}
                   >
+                    <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
                     <div
                       style={{
                         width: 48,
@@ -522,6 +555,12 @@ function TrucksPanel() {
                     >
                       ✕
                     </button>
+                    </div>
+                    <PlacementRow
+                      truck={t}
+                      busy={placingId === t.id}
+                      onSet={onSetPlacement}
+                    />
                   </li>
                 ))}
               </ul>
@@ -559,6 +598,78 @@ function TextInput({
       placeholder={placeholder}
       style={inputStyle}
     />
+  );
+}
+
+function PlacementRow({
+  truck,
+  busy,
+  onSet,
+}: {
+  truck: Truck;
+  busy: boolean;
+  onSet: (t: Truck, placement: number | null) => void;
+}) {
+  const options: { label: string; value: number | null }[] = [
+    { label: "—", value: null },
+    { label: "1", value: 1 },
+    { label: "2", value: 2 },
+    { label: "3", value: 3 },
+  ];
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 8, paddingLeft: 58 }}>
+      <span
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: 11,
+          fontWeight: 700,
+          color: "var(--color-ink)",
+          fontVariantNumeric: "tabular-nums",
+        }}
+      >
+        {truck.vote_count} vote{truck.vote_count === 1 ? "" : "s"}
+      </span>
+      <span style={{ flex: 1 }} />
+      <span
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: 9,
+          letterSpacing: "0.14em",
+          textTransform: "uppercase",
+          color: "var(--color-faded)",
+        }}
+      >
+        Place
+      </span>
+      <div style={{ display: "flex", gap: 4 }}>
+        {options.map((o) => {
+          const active = (truck.placement ?? null) === o.value;
+          return (
+            <button
+              key={o.label}
+              type="button"
+              disabled={busy}
+              aria-label={o.value === null ? "Clear placement" : `Set placement ${o.value}`}
+              onClick={() => onSet(truck, o.value)}
+              style={{
+                minWidth: 30,
+                padding: "5px 8px",
+                fontFamily: "var(--font-mono)",
+                fontSize: 11,
+                fontWeight: 700,
+                cursor: busy ? "wait" : "pointer",
+                background: active ? "var(--color-blue-deep)" : "transparent",
+                color: active ? "var(--color-paper)" : "var(--color-ink)",
+                border: `1.5px solid ${active ? "var(--color-blue-deep)" : "var(--color-ink)"}`,
+                opacity: busy ? 0.6 : 1,
+              }}
+            >
+              {o.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
