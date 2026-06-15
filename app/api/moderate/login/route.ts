@@ -12,7 +12,7 @@ export async function POST(req: Request) {
     return NextResponse.redirect(url, { status: 303 });
   }
   const safeNext =
-    next.startsWith("/moderate") || next.startsWith("/dj") ? next : "/moderate";
+    next.startsWith("/moderate") || next.startsWith("/admin") ? next : "/moderate";
   const res = NextResponse.redirect(new URL(safeNext, req.url), { status: 303 });
   // 72h so a Friday-evening login still covers the whole event day.
   res.cookies.set(MOD_COOKIE, await moderatorToken(), {
