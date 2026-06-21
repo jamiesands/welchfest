@@ -1,0 +1,114 @@
+[
+  {
+    "id": "472600a7-ed1f-4236-b608-cd35b74e4f22",
+    "name": "Joseph Malo",
+    "employee_name": "Didier Malo",
+    "image_url": "/images/designs/1781350606990-3k2io0.webp",
+    "is_winner": false,
+    "created_at": "2026-06-13T11:36:47.059801+00:00"
+  },
+  {
+    "id": "c1357b8b-43d1-4db3-90d0-182a4712c662",
+    "name": "Samuel Malo",
+    "employee_name": "Didier Malo",
+    "image_url": "/images/designs/1781350832502-mwyf5m.webp",
+    "is_winner": false,
+    "created_at": "2026-06-13T11:40:30.700544+00:00"
+  },
+  {
+    "id": "a7a4aaf3-6edc-48f2-b164-f8d5e8ce54a4",
+    "name": "Effie Walker-Brewer",
+    "employee_name": "Auntie Lou",
+    "image_url": "/images/designs/1781353366385-2g7t8b.webp",
+    "is_winner": false,
+    "created_at": "2026-06-13T12:23:01.315114+00:00"
+  },
+  {
+    "id": "67f485f9-639f-4140-be32-93b76f6d3325",
+    "name": "Andy Killinger",
+    "employee_name": null,
+    "image_url": "/images/designs/1781354234190-srekdf.webp",
+    "is_winner": false,
+    "created_at": "2026-06-13T12:37:15.13296+00:00"
+  },
+  {
+    "id": "91db6827-c049-42eb-b0bf-0d2809cd6247",
+    "name": "Eleanor Welch",
+    "employee_name": null,
+    "image_url": "/images/designs/1781357105464-c1h7et.webp",
+    "is_winner": false,
+    "created_at": "2026-06-13T13:25:07.778989+00:00"
+  },
+  {
+    "id": "5a5511d4-de92-47d0-9fdf-237e4cfc7e27",
+    "name": "Frankie Boscolo",
+    "employee_name": null,
+    "image_url": "/images/designs/1781358632222-9lhq7s.webp",
+    "is_winner": false,
+    "created_at": "2026-06-13T13:50:38.910247+00:00"
+  },
+  {
+    "id": "bf9da237-c3d4-40df-a09e-69b1253842b3",
+    "name": "Victoria Boscolo",
+    "employee_name": null,
+    "image_url": "/images/designs/1781358665242-gvrqwz.webp",
+    "is_winner": false,
+    "created_at": "2026-06-13T13:51:13.436667+00:00"
+  },
+  {
+    "id": "9e4a29f6-463b-4eb1-b687-698d8fcf318e",
+    "name": "Evie Wiffen",
+    "employee_name": "Lewis Wiffen",
+    "image_url": "/images/designs/1781358864776-k8ydob.webp",
+    "is_winner": false,
+    "created_at": "2026-06-13T13:54:25.54307+00:00"
+  },
+  {
+    "id": "ae31d8df-ad9f-4911-b4c7-d2bd493cfbe8",
+    "name": "William Welch",
+    "employee_name": null,
+    "image_url": "/images/designs/1781359585668-i72v76.webp",
+    "is_winner": false,
+    "created_at": "2026-06-13T14:06:26.193436+00:00"
+  },
+  {
+    "id": "874a7308-1c8f-4119-9267-1fb625bf329a",
+    "name": "Leo",
+    "employee_name": "Jamie Sands",
+    "image_url": "/images/designs/1781361004586-l0dtwl.webp",
+    "is_winner": false,
+    "created_at": "2026-06-13T14:30:04.346155+00:00"
+  },
+  {
+    "id": "cfaa3f98-4928-4e29-9883-e67353dfe1e3",
+    "name": "Leo",
+    "employee_name": "Jamie Sands",
+    "image_url": "/images/designs/1781361073379-0ik8yu.webp",
+    "is_winner": false,
+    "created_at": "2026-06-13T14:31:13.025364+00:00"
+  },
+  {
+    "id": "4c7eb7b5-4598-4e55-8db8-32d95ef6fd8f",
+    "name": "Leo",
+    "employee_name": "Jamie Sands",
+    "image_url": "/images/designs/1781361184373-1nd5it.webp",
+    "is_winner": false,
+    "created_at": "2026-06-13T14:33:03.433262+00:00"
+  },
+  {
+    "id": "a37d6128-e88a-4fe4-b958-8a22b6358f5e",
+    "name": "Leo",
+    "employee_name": "Jamie Sands",
+    "image_url": "/images/designs/1781361403231-m7owlh.webp",
+    "is_winner": false,
+    "created_at": "2026-06-13T14:36:42.802037+00:00"
+  },
+  {
+    "id": "b83ae4fb-fdd8-4a3e-96d3-59d01cc17533",
+    "name": "Leo",
+    "employee_name": "Jamie Sands",
+    "image_url": "/images/designs/1781361412773-7nfxr0.webp",
+    "is_winner": false,
+    "created_at": "2026-06-13T14:36:51.891454+00:00"
+  }
+]

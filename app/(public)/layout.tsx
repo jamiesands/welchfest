@@ -4,10 +4,6 @@ import SiteNav from "@/components/site/SiteNav";
 import SiteFooter from "@/components/site/SiteFooter";
 import { hasLeaderboard } from "@/lib/data";
 
-// ISR: the shell is effectively frozen apart from the leaderboard nav gate,
-// which is also refreshed on-demand when the first penalty-shootout row lands.
-export const revalidate = 3600;
-
 export default async function PublicLayout({
   children,
 }: {

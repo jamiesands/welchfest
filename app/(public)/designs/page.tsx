@@ -1,9 +1,6 @@
 import { getLorryDesigns } from "@/lib/data";
-import { thumbUrl } from "@/lib/images";
 import Gallery, { type GalleryItem } from "@/components/site/Gallery";
 import PageHeading from "@/components/site/PageHeading";
-
-export const revalidate = 3600;
 
 export const metadata = {
   title: "Design a Lorry · Welchfest 2026",
@@ -16,7 +13,7 @@ export default async function DesignsPage() {
 
   const items: GalleryItem[] = designs.map((d) => ({
     id: d.id,
-    thumb: thumbUrl(d.image_url, { width: 600, quality: 70 }) ?? d.image_url,
+    thumb: d.image_url,
     full: d.image_url,
     alt: `Lorry design by ${d.name}`,
     title: d.name,

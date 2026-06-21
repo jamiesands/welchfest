@@ -2,8 +2,6 @@ import { notFound } from "next/navigation";
 import { getLeaderboard, type PenaltyEntry } from "@/lib/data";
 import PageHeading from "@/components/site/PageHeading";
 
-export const revalidate = 3600;
-
 export const metadata = {
   title: "Leaderboard · Welchfest 2026",
   description: "Penalty-shootout leaderboard from Welchfest, 13 June 2026.",

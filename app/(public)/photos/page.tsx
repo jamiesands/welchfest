@@ -1,10 +1,7 @@
 import { getApprovedPhotos } from "@/lib/data";
-import { thumbUrl } from "@/lib/images";
 import { unit3 } from "@/lib/photos";
 import Gallery, { type GalleryItem } from "@/components/site/Gallery";
 import PageHeading from "@/components/site/PageHeading";
-
-export const revalidate = 3600;
 
 export const metadata = {
   title: "Photos · Welchfest 2026",
@@ -18,7 +15,7 @@ export default async function PhotosPage() {
     const who = [p.guest_name, p.depot].filter(Boolean).join(" · ");
     return {
       id: p.id,
-      thumb: thumbUrl(p.url, { width: 600, quality: 70 }) ?? p.url,
+      thumb: p.url,
       full: p.url,
       alt: p.caption ?? `Welchfest unit ${unit3(p.unit_number)}`,
       title: p.caption,
