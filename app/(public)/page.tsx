@@ -5,11 +5,8 @@ import {
   getTrucksByBand,
   hasLeaderboard,
 } from "@/lib/data";
-import { thumbUrl } from "@/lib/images";
 import { BAND_ORDER } from "@/lib/trucks";
 import WBPostmark from "@/components/waybill/WBPostmark";
-
-export const revalidate = 3600;
 
 export const metadata = {
   title: "Welchfest 2026",
@@ -27,7 +24,7 @@ export default async function HomePage() {
 
   const truckCount = BAND_ORDER.reduce((n, b) => n + trucks[b].length, 0);
   const hero = photos[0] ?? null;
-  const heroUrl = hero ? thumbUrl(hero.url, { width: 1600, quality: 75 }) : null;
+  const heroUrl = hero ? hero.url : null;
 
   const cards = [
     { href: "/photos", label: "Photos", count: photos.length, note: "Guest gallery" },

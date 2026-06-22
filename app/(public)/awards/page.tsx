@@ -1,5 +1,4 @@
 import { getTrucksByBand } from "@/lib/data";
-import { thumbUrl } from "@/lib/images";
 import {
   BAND_LABEL,
   BAND_ORDER,
@@ -8,8 +7,6 @@ import {
 } from "@/lib/trucks";
 import PageHeading from "@/components/site/PageHeading";
 import PlacementBadge from "@/components/site/PlacementBadge";
-
-export const revalidate = 3600;
 
 export const metadata = {
   title: "Truck Awards · Welchfest 2026",
@@ -66,7 +63,7 @@ export default async function AwardsPage() {
 
 function TruckCard({ truck }: { truck: Truck }) {
   const placed = truck.placement !== null;
-  const thumb = thumbUrl(truck.photo_url, { width: 600, quality: 70 });
+  const thumb = truck.photo_url;
   return (
     <div
       className={`relative flex h-full flex-col border bg-card shadow-[2px_2px_0_rgba(30,27,22,0.18)] ${
